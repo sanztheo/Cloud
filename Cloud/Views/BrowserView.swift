@@ -40,7 +40,7 @@ struct BrowserView: View {
                         viewModel.isSpotlightVisible = false
                     }
 
-                SpotlightView(viewModel: viewModel)
+                SpotlightViewAppKit(viewModel: viewModel)
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }
         }

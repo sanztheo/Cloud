@@ -27,9 +27,208 @@ class BrowserViewModel: ObservableObject {
     // MARK: - WebView Management
     private var webViews: [UUID: WKWebView] = [:]
     private var cancellables = Set<AnyCancellable>()
+    private var currentUserAgentIndex = 0
 
-    // MARK: - Chrome User Agent
-    static let chromeUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    // MARK: - Anti-Detection Configuration
+    private static let userAgents = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0"
+    ]
+
+    // Legacy support - keep for backward compatibility
+    static let chromeUserAgent = userAgents[0]
+
+    // Anti-detection JavaScript that will be injected into every page
+    private static let stealthScript = """
+    (function() {
+        // Mask navigator.webdriver property
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+            configurable: true
+        });
+
+        // Add realistic plugins
+        Object.defineProperty(navigator, 'plugins', {
+            get: () => {
+                return Object.create(PluginArray.prototype, {
+                    length: { value: 3 },
+                    0: {
+                        value: Object.create(Plugin.prototype, {
+                            name: { value: 'Chrome PDF Plugin' },
+                            description: { value: 'Portable Document Format' },
+                            filename: { value: 'internal-pdf-viewer' },
+                            length: { value: 1 },
+                            0: {
+                                value: Object.create(MimeType.prototype, {
+                                    type: { value: 'application/pdf' },
+                                    suffixes: { value: 'pdf' },
+                                    description: { value: 'Portable Document Format' },
+                                    enabledPlugin: { get: function() { return this; } }
+                                })
+                            }
+                        })
+                    },
+                    1: {
+                        value: Object.create(Plugin.prototype, {
+                            name: { value: 'Chrome PDF Viewer' },
+                            description: { value: 'Portable Document Format' },
+                            filename: { value: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+                            length: { value: 1 },
+                            0: {
+                                value: Object.create(MimeType.prototype, {
+                                    type: { value: 'application/pdf' },
+                                    suffixes: { value: 'pdf' },
+                                    description: { value: 'Portable Document Format' },
+                                    enabledPlugin: { get: function() { return this; } }
+                                })
+                            }
+                        })
+                    },
+                    2: {
+                        value: Object.create(Plugin.prototype, {
+                            name: { value: 'Native Client' },
+                            description: { value: 'Native Client Executable' },
+                            filename: { value: 'internal-nacl-plugin' },
+                            length: { value: 2 },
+                            0: {
+                                value: Object.create(MimeType.prototype, {
+                                    type: { value: 'application/x-nacl' },
+                                    suffixes: { value: '' },
+                                    description: { value: 'Native Client Executable' },
+                                    enabledPlugin: { get: function() { return this; } }
+                                })
+                            },
+                            1: {
+                                value: Object.create(MimeType.prototype, {
+                                    type: { value: 'application/x-pnacl' },
+                                    suffixes: { value: '' },
+                                    description: { value: 'Portable Native Client Executable' },
+                                    enabledPlugin: { get: function() { return this; } }
+                                })
+                            }
+                        })
+                    }
+                });
+            },
+            configurable: true
+        });
+
+        // Set proper languages
+        Object.defineProperty(navigator, 'languages', {
+            get: () => ['en-US', 'en', 'fr'],
+            configurable: true
+        });
+
+        // Add chrome object
+        if (!window.chrome) {
+            window.chrome = {
+                runtime: {},
+                loadTimes: function() {
+                    return {
+                        requestTime: Date.now() / 1000,
+                        startLoadTime: Date.now() / 1000,
+                        commitLoadTime: Date.now() / 1000,
+                        finishDocumentLoadTime: Date.now() / 1000,
+                        finishLoadTime: Date.now() / 1000,
+                        firstPaintTime: Date.now() / 1000,
+                        firstPaintAfterLoadTime: Date.now() / 1000,
+                        navigationType: 'Other',
+                        wasFetchedViaSpdy: false,
+                        wasNpnNegotiated: true,
+                        npnNegotiatedProtocol: 'h2',
+                        wasAlternateProtocolAvailable: false,
+                        connectionInfo: 'h2'
+                    };
+                },
+                csi: function() {
+                    return {
+                        onloadT: Date.now(),
+                        startE: Date.now() - 100,
+                        pageT: Date.now() - Date.now()
+                    };
+                },
+                app: {
+                    isInstalled: false
+                }
+            };
+        }
+
+        // Mask permissions
+        const originalQuery = navigator.permissions ? navigator.permissions.query : undefined;
+        if (originalQuery) {
+            navigator.permissions.query = function(parameters) {
+                if (parameters.name === 'notifications') {
+                    return Promise.resolve({ state: Notification.permission });
+                }
+                return originalQuery.apply(this, arguments);
+            };
+        }
+
+        // Add realistic hardware concurrency
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+            get: () => 8,
+            configurable: true
+        });
+
+        // Add device memory
+        Object.defineProperty(navigator, 'deviceMemory', {
+            get: () => 8,
+            configurable: true
+        });
+
+        // Mask automation controlled flag
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => false,
+            configurable: true
+        });
+
+        // Override toString methods to appear native
+        const originalToString = Object.prototype.toString;
+        Object.prototype.toString = function() {
+            if (this === navigator) return '[object Navigator]';
+            if (this === window.chrome) return '[object Object]';
+            return originalToString.call(this);
+        };
+
+        // Add realistic connection info
+        if (navigator.connection) {
+            Object.defineProperty(navigator.connection, 'rtt', {
+                get: () => 50,
+                configurable: true
+            });
+            Object.defineProperty(navigator.connection, 'downlink', {
+                get: () => 10,
+                configurable: true
+            });
+            Object.defineProperty(navigator.connection, 'effectiveType', {
+                get: () => '4g',
+                configurable: true
+            });
+        }
+
+        // Fix Intl.DateTimeFormat timezone
+        const originalDateTimeFormat = Intl.DateTimeFormat;
+        Intl.DateTimeFormat = function(...args) {
+            if (args[1] && args[1].timeZone === undefined) {
+                args[1].timeZone = 'America/New_York';
+            }
+            return new originalDateTimeFormat(...args);
+        };
+
+        // Console warning protection
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            const msg = args[0];
+            if (typeof msg === 'string' && msg.includes('non-standards-compliant')) {
+                return;
+            }
+            return originalWarn.apply(console, args);
+        };
+    })();
+    """
 
     // MARK: - Initialization
     init() {
@@ -57,17 +256,82 @@ class BrowserViewModel: ObservableObject {
     }
 
     // MARK: - WebView Management
-    func createWebView(for tab: BrowserTab) -> WKWebView {
+
+    /// Gets a random user agent from the pool for rotation
+    private func getRandomUserAgent() -> String {
+        // Rotate through user agents sequentially to maintain consistency per session
+        // but vary across different sessions
+        currentUserAgentIndex = (currentUserAgentIndex + 1) % Self.userAgents.count
+        return Self.userAgents[currentUserAgentIndex]
+    }
+
+    /// Gets a specific user agent by index for consistency within a tab session
+    private func getUserAgent(for tabId: UUID) -> String {
+        // Use tab ID hash to consistently assign same UA to same tab
+        let hash = tabId.hashValue
+        let index = abs(hash) % Self.userAgents.count
+        return Self.userAgents[index]
+    }
+
+    /// Creates an enhanced WKWebViewConfiguration with anti-detection settings
+    private func createStealthConfiguration() -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
-        configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+        let preferences = WKPreferences()
+
+        // Enable JavaScript
+        preferences.javaScriptCanOpenWindowsAutomatically = true
+        configuration.preferences = preferences
+
+        // Allow inline media playback
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+
+        // Suppress incremental rendering to appear more human-like
+        configuration.suppressesIncrementalRendering = false
+
+        // Set website data store with cookies enabled
+        let dataStore = WKWebsiteDataStore.default()
+        configuration.websiteDataStore = dataStore
+
+        // Allow air play
+        configuration.allowsAirPlayForMediaPlayback = true
+
+        return configuration
+    }
+
+    /// Injects stealth JavaScript into the webView
+    private func injectStealthScript(into webView: WKWebView) {
+        let userScript = WKUserScript(
+            source: Self.stealthScript,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+
+        webView.configuration.userContentController.removeAllUserScripts()
+        webView.configuration.userContentController.addUserScript(userScript)
+    }
+
+    func createWebView(for tab: BrowserTab) -> WKWebView {
+        // Create enhanced configuration with anti-detection settings
+        let configuration = createStealthConfiguration()
 
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
-        webView.customUserAgent = Self.chromeUserAgent
+
+        // Set tab-specific user agent for consistency within the tab
+        webView.customUserAgent = getUserAgent(for: tab.id)
+
+        // Enable gestures
         webView.allowsBackForwardNavigationGestures = true
+        webView.allowsMagnification = true
+
+        // Inject stealth script
+        injectStealthScript(into: webView)
 
         // Ensure webview fills its container
         webView.translatesAutoresizingMaskIntoConstraints = true
         webView.autoresizingMask = [.width, .height]
+
+        // Additional configuration for enhanced stealth
+        webView.allowsLinkPreview = true
 
         webViews[tab.id] = webView
         loadURL(tab.url, for: tab.id)
@@ -143,7 +407,36 @@ class BrowserViewModel: ObservableObject {
     // MARK: - Navigation
     func loadURL(_ url: URL, for tabId: UUID) {
         guard let webView = webViews[tabId] else { return }
-        let request = URLRequest(url: url)
+
+        // Create request with enhanced headers for anti-detection
+        var request = URLRequest(url: url)
+
+        // Add comprehensive HTTP headers to appear like a real browser
+        request.setValue("en-US,en;q=0.9,fr;q=0.8", forHTTPHeaderField: "Accept-Language")
+        request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
+        request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", forHTTPHeaderField: "Accept")
+        request.setValue("1", forHTTPHeaderField: "Upgrade-Insecure-Requests")
+
+        // Set referrer based on the URL domain
+        if url.host == "google.com" || url.host?.contains("google") == true {
+            request.setValue("https://www.google.com/", forHTTPHeaderField: "Referer")
+        } else {
+            // Use Google as referrer for most sites to appear natural
+            request.setValue("https://www.google.com/", forHTTPHeaderField: "Referer")
+        }
+
+        // Additional headers for enhanced stealth
+        request.setValue("max-age=0", forHTTPHeaderField: "Cache-Control")
+        request.setValue("same-origin", forHTTPHeaderField: "Sec-Fetch-Site")
+        request.setValue("navigate", forHTTPHeaderField: "Sec-Fetch-Mode")
+        request.setValue("?1", forHTTPHeaderField: "Sec-Fetch-User")
+        request.setValue("document", forHTTPHeaderField: "Sec-Fetch-Dest")
+        request.setValue("none", forHTTPHeaderField: "Sec-CH-UA-Mobile")
+        request.setValue("\"macOS\"", forHTTPHeaderField: "Sec-CH-UA-Platform")
+
+        // Set Chrome client hints
+        request.setValue("\"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"", forHTTPHeaderField: "Sec-CH-UA")
+
         webView.load(request)
 
         if let index = tabs.firstIndex(where: { $0.id == tabId }) {
