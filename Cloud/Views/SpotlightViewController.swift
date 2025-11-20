@@ -68,6 +68,9 @@ class SpotlightViewController: NSViewController {
             cell.isBordered = false
             cell.isBezeled = false
             cell.focusRingType = .none
+
+            // Hide search icon (magnifying glass)
+            cell.searchButtonCell = nil
         }
 
         // Table view
