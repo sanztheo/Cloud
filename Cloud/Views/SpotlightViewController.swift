@@ -55,6 +55,14 @@ class SpotlightViewController: NSViewController {
         searchField.target = self
         searchField.action = #selector(searchFieldChanged)
 
+        // Make search field transparent
+        searchField.wantsLayer = true
+        searchField.layer?.backgroundColor = NSColor.clear.cgColor
+        if let cell = searchField.cell as? NSSearchFieldCell {
+            cell.backgroundColor = .clear
+            cell.drawsBackground = false
+        }
+
         // Table view
         tableView = SpotlightTableView()
         tableView.delegate = self
@@ -191,6 +199,27 @@ extension SpotlightViewController: NSSearchFieldDelegate {
             // Escape key
             close()
             return true
+        } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
+            // Down arrow - move to table view
+            if !searchResults.isEmpty {
+                view.window?.makeFirstResponder(tableView)
+                if tableView.selectedRow < 0 {
+                    tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                }
+                tableView.scrollRowToVisible(tableView.selectedRow)
+            }
+            return true
+        } else if commandSelector == #selector(NSResponder.moveUp(_:)) {
+            // Up arrow - move to table view (select last item)
+            if !searchResults.isEmpty {
+                view.window?.makeFirstResponder(tableView)
+                let lastRow = searchResults.count - 1
+                if tableView.selectedRow < 0 {
+                    tableView.selectRowIndexes(IndexSet(integer: lastRow), byExtendingSelection: false)
+                }
+                tableView.scrollRowToVisible(tableView.selectedRow)
+            }
+            return true
         }
         return false
     }
@@ -318,6 +347,20 @@ class SpotlightTableView: NSTableView {
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         spotlightDelegate?.tableViewMouseMovedAwayFromEdges(self)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        let row = self.row(at: point)
+
+        if row >= 0 {
+            // Select the row
+            selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+            // Trigger navigation immediately
+            spotlightDelegate?.tableViewDidPressEnter(self)
+        } else {
+            super.mouseDown(with: event)
+        }
     }
 
     override func keyDown(with event: NSEvent) {
