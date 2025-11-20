@@ -12,8 +12,8 @@
 	"argv": [
 		"/opt/homebrew/bin/xcode-build-server"
 	],
-	"workspace": "/Users/sanz/Desktop/APP/Cloud/Cloud.xcodeproj/project.xcworkspace",
-	"build_root": "/Users/sanz/Library/Developer/Xcode/DerivedData/Cloud-bmwsaxlygvcdsxbdhesxdotvlipu",
+	"workspace": "/Users/sanz/Desktop/APP/Cloud-V1-0b88286b24dfdcf389e8291743d26f5e3986c563/Cloud.xcodeproj/project.xcworkspace",
+	"build_root": "/Users/sanz/Library/Developer/Xcode/DerivedData/Cloud-hgpozuxaettqxggmdovprtcjqpyd",
 	"scheme": "Cloud",
 	"kind": "xcode"
 }

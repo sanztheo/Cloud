@@ -22,6 +22,7 @@ class BrowserViewModel: ObservableObject {
     @Published var isSidebarCollapsed: Bool = false
     @Published var searchQuery: String = ""
     @Published var addressBarText: String = ""
+    @Published var spotlightSelectedIndex: Int = 0
 
     // MARK: - WebView Management
     private var webViews: [UUID: WKWebView] = [:]
