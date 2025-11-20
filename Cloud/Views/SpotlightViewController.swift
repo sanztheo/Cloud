@@ -46,7 +46,7 @@ class SpotlightViewController: NSViewController {
         containerView.layer?.shadowRadius = 30
         containerView.layer?.shadowOffset = CGSize(width: 0, height: -15)
 
-        // Search field
+        // Search field - Arc style (completely transparent)
         searchField = NSSearchField()
         searchField.placeholderString = "Search or enter URL..."
         searchField.font = .systemFont(ofSize: 20, weight: .regular)
@@ -55,12 +55,19 @@ class SpotlightViewController: NSViewController {
         searchField.target = self
         searchField.action = #selector(searchFieldChanged)
 
-        // Make search field transparent
+        // Complete transparency like Arc
+        searchField.isBordered = false
+        searchField.isBezeled = false
+        searchField.drawsBackground = false
         searchField.wantsLayer = true
         searchField.layer?.backgroundColor = NSColor.clear.cgColor
+
         if let cell = searchField.cell as? NSSearchFieldCell {
             cell.backgroundColor = .clear
             cell.drawsBackground = false
+            cell.isBordered = false
+            cell.isBezeled = false
+            cell.focusRingType = .none
         }
 
         // Table view
