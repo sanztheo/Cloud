@@ -641,16 +641,14 @@ class BrowserViewModel: ObservableObject {
 
         switch result.type {
         case .tab:
+            // Switch to existing tab instead of creating new one
             if let tabId = result.tabId {
                 selectTab(tabId)
             }
         case .bookmark, .history, .suggestion:
+            // Create NEW tab for bookmarks, history, and suggestions (Arc-style behavior)
             if let url = result.url {
-                if let tabId = activeTabId {
-                    loadURL(url, for: tabId)
-                } else {
-                    createNewTab(url: url)
-                }
+                createNewTab(url: url)
             }
         }
     }

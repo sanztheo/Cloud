@@ -70,8 +70,8 @@ class SpotlightViewController: NSViewController {
         tableView.headerView = nil
         tableView.backgroundColor = .clear
         tableView.selectionHighlightStyle = .none
-        tableView.intercellSpacing = NSSize(width: 0, height: 2)
-        tableView.rowHeight = 54
+        tableView.intercellSpacing = NSSize(width: 0, height: 4)
+        tableView.rowHeight = 66
         tableView.spotlightDelegate = self
 
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("result"))
@@ -144,7 +144,7 @@ class SpotlightViewController: NSViewController {
 
         // Update container height
         let baseHeight: CGFloat = 68
-        let resultsHeight: CGFloat = searchResults.isEmpty ? 0 : min(CGFloat(searchResults.count) * 56 + 16, 360)
+        let resultsHeight: CGFloat = searchResults.isEmpty ? 0 : min(CGFloat(searchResults.count) * 70 + 16, 400)
 
         containerView.constraints.first { $0.firstAttribute == .height }?.isActive = false
         containerView.heightAnchor.constraint(equalToConstant: baseHeight + resultsHeight).isActive = true
@@ -391,8 +391,8 @@ class SpotlightCellView: NSTableCellView {
     private var iconImageView: NSImageView!
     private var titleLabel: NSTextField!
     private var subtitleLabel: NSTextField!
+    private var badgeContainer: NSView!
     private var badgeLabel: NSTextField!
-    private var hintLabel: NSTextField!
     private var backgroundLayer: CALayer!
 
     override init(frame frameRect: NSRect) {
@@ -410,13 +410,13 @@ class SpotlightCellView: NSTableCellView {
 
         // Background layer for selection
         backgroundLayer = CALayer()
-        backgroundLayer.cornerRadius = 10
+        backgroundLayer.cornerRadius = 12
         layer?.addSublayer(backgroundLayer)
 
-        // Icon background
+        // Icon background (larger circle)
         iconBackground = NSView()
         iconBackground.wantsLayer = true
-        iconBackground.layer?.cornerRadius = 16
+        iconBackground.layer?.cornerRadius = 18
         iconBackground.translatesAutoresizingMaskIntoConstraints = false
         addSubview(iconBackground)
 
@@ -425,68 +425,72 @@ class SpotlightCellView: NSTableCellView {
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconBackground.addSubview(iconImageView)
 
-        // Title
+        // Title (larger font)
         titleLabel = NSTextField(labelWithString: "")
-        titleLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        titleLabel.font = .systemFont(ofSize: 15, weight: .medium)
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(titleLabel)
 
-        // Subtitle
+        // Subtitle (larger font)
         subtitleLabel = NSTextField(labelWithString: "")
-        subtitleLabel.font = .systemFont(ofSize: 12)
+        subtitleLabel.font = .systemFont(ofSize: 13)
         subtitleLabel.textColor = .secondaryLabelColor
         subtitleLabel.lineBreakMode = .byTruncatingTail
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(subtitleLabel)
 
-        // Badge
-        badgeLabel = NSTextField(labelWithString: "")
-        badgeLabel.font = .systemFont(ofSize: 10, weight: .medium)
-        badgeLabel.alignment = .right
-        badgeLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(badgeLabel)
+        // Badge container for "Switch to Tab" style
+        badgeContainer = NSView()
+        badgeContainer.wantsLayer = true
+        badgeContainer.layer?.cornerRadius = 8
+        badgeContainer.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(badgeContainer)
 
-        // Hint
-        hintLabel = NSTextField(labelWithString: "")
-        hintLabel.font = .systemFont(ofSize: 10, weight: .medium)
-        hintLabel.textColor = .secondaryLabelColor
-        hintLabel.wantsLayer = true
-        hintLabel.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.5).cgColor
-        hintLabel.layer?.cornerRadius = 6
-        hintLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(hintLabel)
+        // Badge label
+        badgeLabel = NSTextField(labelWithString: "")
+        badgeLabel.font = .systemFont(ofSize: 11, weight: .medium)
+        badgeLabel.alignment = .center
+        badgeLabel.translatesAutoresizingMaskIntoConstraints = false
+        badgeContainer.addSubview(badgeLabel)
 
         NSLayoutConstraint.activate([
-            iconBackground.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            // Larger icon circle
+            iconBackground.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             iconBackground.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconBackground.widthAnchor.constraint(equalToConstant: 32),
-            iconBackground.heightAnchor.constraint(equalToConstant: 32),
+            iconBackground.widthAnchor.constraint(equalToConstant: 36),
+            iconBackground.heightAnchor.constraint(equalToConstant: 36),
 
             iconImageView.centerXAnchor.constraint(equalTo: iconBackground.centerXAnchor),
             iconImageView.centerYAnchor.constraint(equalTo: iconBackground.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 16),
-            iconImageView.heightAnchor.constraint(equalToConstant: 16),
+            iconImageView.widthAnchor.constraint(equalToConstant: 18),
+            iconImageView.heightAnchor.constraint(equalToConstant: 18),
 
-            titleLabel.leadingAnchor.constraint(equalTo: iconBackground.trailingAnchor, constant: 14),
-            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 13),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: badgeLabel.leadingAnchor, constant: -8),
+            // More spacing between icon and text
+            titleLabel.leadingAnchor.constraint(equalTo: iconBackground.trailingAnchor, constant: 16),
+            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: badgeContainer.leadingAnchor, constant: -12),
 
             subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 3),
-            subtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: badgeLabel.leadingAnchor, constant: -8),
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            subtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: badgeContainer.leadingAnchor, constant: -12),
 
-            badgeLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            badgeLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            // Badge container
+            badgeContainer.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            badgeContainer.centerYAnchor.constraint(equalTo: centerYAnchor),
+            badgeContainer.heightAnchor.constraint(equalToConstant: 24),
 
-            hintLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            hintLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
+            // Badge label inside container
+            badgeLabel.leadingAnchor.constraint(equalTo: badgeContainer.leadingAnchor, constant: 10),
+            badgeLabel.trailingAnchor.constraint(equalTo: badgeContainer.trailingAnchor, constant: -10),
+            badgeLabel.topAnchor.constraint(equalTo: badgeContainer.topAnchor, constant: 4),
+            badgeLabel.bottomAnchor.constraint(equalTo: badgeContainer.bottomAnchor, constant: -4)
         ])
     }
 
     override func layout() {
         super.layout()
-        backgroundLayer.frame = bounds.insetBy(dx: 8, dy: 1)
+        backgroundLayer.frame = bounds.insetBy(dx: 10, dy: 2)
     }
 
     func configure(with result: SearchResult, isSelected: Bool) {
@@ -499,27 +503,41 @@ class SpotlightCellView: NSTableCellView {
         iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
         iconImageView.contentTintColor = iconColor
 
-        // Configure badge or hint
-        if isSelected {
-            badgeLabel.isHidden = true
-            hintLabel.isHidden = false
-            hintLabel.stringValue = " ⏎ to open "
+        // Arc-style blue/teal selection background
+        let arcBlue = NSColor(red: 74/255.0, green: 124/255.0, blue: 142/255.0, alpha: 1.0)
 
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.15
-                backgroundLayer.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.15).cgColor
+        // Configure badge - show "Switch to Tab" for existing tabs only
+        if result.type == .tab {
+            badgeContainer.isHidden = false
+            badgeLabel.stringValue = "Switch to Tab"
+
+            if isSelected {
+                badgeContainer.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.15).cgColor
+                badgeLabel.textColor = .white
+            } else {
+                badgeContainer.layer?.backgroundColor = arcBlue.withAlphaComponent(0.2).cgColor
+                badgeLabel.textColor = arcBlue
             }
         } else {
-            badgeLabel.isHidden = false
-            hintLabel.isHidden = true
+            badgeContainer.isHidden = true
+        }
 
-            let (badgeText, badgeColor) = badgeConfig(for: result.type)
-            badgeLabel.stringValue = badgeText
-            badgeLabel.textColor = badgeColor
-
+        // Arc-style selection highlight
+        if isSelected {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.15
+                backgroundLayer.backgroundColor = arcBlue.cgColor
+                titleLabel.textColor = .white
+                subtitleLabel.textColor = NSColor.white.withAlphaComponent(0.7)
+                iconImageView.contentTintColor = .white
+            }
+        } else {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.15
                 backgroundLayer.backgroundColor = NSColor.clear.cgColor
+                titleLabel.textColor = .labelColor
+                subtitleLabel.textColor = .secondaryLabelColor
+                iconImageView.contentTintColor = iconColor
             }
         }
     }
@@ -534,19 +552,6 @@ class SpotlightCellView: NSTableCellView {
             return (NSColor.systemGray.withAlphaComponent(0.15), "clock.fill", .secondaryLabelColor)
         case .suggestion:
             return (NSColor.systemPurple.withAlphaComponent(0.15), "globe", .systemPurple)
-        }
-    }
-
-    private func badgeConfig(for type: SearchResultType) -> (String, NSColor) {
-        switch type {
-        case .tab:
-            return ("Tab", NSColor.systemBlue.withAlphaComponent(0.8))
-        case .bookmark:
-            return ("Bookmark", NSColor.systemYellow.withAlphaComponent(0.9))
-        case .history:
-            return ("History", NSColor.secondaryLabelColor.withAlphaComponent(0.7))
-        case .suggestion:
-            return ("", .clear)
         }
     }
 }
