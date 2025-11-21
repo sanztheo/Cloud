@@ -116,6 +116,7 @@ enum SearchResultType {
     case bookmark
     case history
     case suggestion
+    case website
 }
 
 struct SearchResult: Identifiable {

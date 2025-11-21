@@ -235,6 +235,8 @@ struct SpotlightView: View {
             return Color.gray.opacity(0.15)
         case .suggestion:
             return Color.purple.opacity(0.15)
+        case .website:
+            return Color.white.opacity(0.1)
         }
     }
 
@@ -254,9 +256,13 @@ struct SpotlightView: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
             case .suggestion:
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+            case .website:
                 Image(systemName: "globe")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.purple)
+                    .foregroundColor(.primary)
             }
         }
     }
@@ -277,6 +283,8 @@ struct SpotlightView: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary.opacity(0.7))
             case .suggestion:
+                EmptyView()
+            case .website:
                 EmptyView()
             }
         }

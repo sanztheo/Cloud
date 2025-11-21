@@ -640,51 +640,21 @@ class BrowserViewModel: ObservableObject {
     var results: [SearchResult] = []
     let lowercasedQuery = query.lowercased()
 
-    // Search tabs
-    for tab in tabs
-    where tab.title.lowercased().contains(lowercasedQuery)
-      || tab.url.absoluteString.lowercased().contains(lowercasedQuery)
-    {
-      results.append(
-        SearchResult(
-          type: .tab,
-          title: tab.title,
-          subtitle: tab.url.host ?? tab.url.absoluteString,
-          url: tab.url,
-          tabId: tab.id
-        ))
+    // 1. Check if query looks like a URL (contains dot and no spaces)
+    if query.contains(".") && !query.contains(" ") {
+      let urlString = query.hasPrefix("http") ? query : "https://\(query)"
+      if let url = URL(string: urlString) {
+        results.append(
+          SearchResult(
+            type: .website,
+            title: query,
+            subtitle: "Open website",
+            url: url
+          ))
+      }
     }
 
-    // Search bookmarks
-    for bookmark in bookmarks
-    where bookmark.title.lowercased().contains(lowercasedQuery)
-      || bookmark.url.absoluteString.lowercased().contains(lowercasedQuery)
-    {
-      results.append(
-        SearchResult(
-          type: .bookmark,
-          title: bookmark.title,
-          subtitle: bookmark.url.host ?? bookmark.url.absoluteString,
-          url: bookmark.url
-        ))
-    }
-
-    // Search history
-    for entry in history.prefix(20)
-    where entry.title.lowercased().contains(lowercasedQuery)
-      || entry.url.absoluteString.lowercased().contains(lowercasedQuery)
-    {
-      results.append(
-        SearchResult(
-          type: .history,
-          title: entry.title,
-          subtitle: entry.url.host ?? entry.url.absoluteString,
-          url: entry.url
-        ))
-    }
-
-    // Add search suggestion
-    // Add search suggestions
+    // 2. Add search suggestions (Google suggestions)
     if !suggestions.isEmpty {
       results.append(contentsOf: suggestions)
     } else {
@@ -701,6 +671,49 @@ class BrowserViewModel: ObservableObject {
         ))
     }
 
+    // 3. Search history
+    for entry in history.prefix(20)
+    where entry.title.lowercased().contains(lowercasedQuery)
+      || entry.url.absoluteString.lowercased().contains(lowercasedQuery)
+    {
+      results.append(
+        SearchResult(
+          type: .history,
+          title: entry.title,
+          subtitle: entry.url.host ?? entry.url.absoluteString,
+          url: entry.url
+        ))
+    }
+
+    // 4. Search tabs
+    for tab in tabs
+    where tab.title.lowercased().contains(lowercasedQuery)
+      || tab.url.absoluteString.lowercased().contains(lowercasedQuery)
+    {
+      results.append(
+        SearchResult(
+          type: .tab,
+          title: tab.title,
+          subtitle: tab.url.host ?? tab.url.absoluteString,
+          url: tab.url,
+          tabId: tab.id
+        ))
+    }
+
+    // 5. Search bookmarks
+    for bookmark in bookmarks
+    where bookmark.title.lowercased().contains(lowercasedQuery)
+      || bookmark.url.absoluteString.lowercased().contains(lowercasedQuery)
+    {
+      results.append(
+        SearchResult(
+          type: .bookmark,
+          title: bookmark.title,
+          subtitle: bookmark.url.host ?? bookmark.url.absoluteString,
+          url: bookmark.url
+        ))
+    }
+
     return results
   }
 
@@ -713,8 +726,8 @@ class BrowserViewModel: ObservableObject {
       if let tabId = result.tabId {
         selectTab(tabId)
       }
-    case .bookmark, .history, .suggestion:
-      // Create NEW tab for bookmarks, history, and suggestions (Arc-style behavior)
+    case .bookmark, .history, .suggestion, .website:
+      // Create NEW tab for bookmarks, history, suggestions, and websites (Arc-style behavior)
       if let url = result.url {
         createNewTab(url: url)
       }

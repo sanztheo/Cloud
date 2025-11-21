@@ -17,7 +17,11 @@ class SpotlightViewController: NSViewController {
   private var searchResults: [SearchResult] = []
 
   override func loadView() {
-    view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+    let rootView = SpotlightRootView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+    rootView.onMouseDown = { [weak self] in
+      self?.close()
+    }
+    view = rootView
   }
 
   override func viewDidLoad() {
@@ -34,7 +38,7 @@ class SpotlightViewController: NSViewController {
 
   private func setupUI() {
     // Container with visual effect
-    containerView = NSVisualEffectView()
+    containerView = ClickBlockingVisualEffectView()
     containerView.material = .hudWindow
     containerView.blendingMode = .behindWindow
     containerView.state = .active
@@ -243,8 +247,17 @@ extension SpotlightViewController: NSSearchFieldDelegate {
   private func handleEnter() {
     guard let viewModel = viewModel else { return }
 
+    let query = searchField.stringValue
+
+    // Check if query looks like a URL (contains dot and no spaces)
+    if query.contains(".") && !query.contains(" ") {
+      viewModel.navigateToAddress(query)
+      close()
+      return
+    }
+
     if searchResults.isEmpty {
-      viewModel.navigateToAddress(searchField.stringValue)
+      viewModel.navigateToAddress(query)
       close()
     } else {
       let selectedRow = tableView.selectedRow
@@ -466,10 +479,19 @@ class SpotlightCellView: NSTableCellView {
     subtitleLabel.stringValue = result.subtitle
 
     // Configure icon
-    let (bgColor, iconName, iconColor) = iconConfig(for: result.type)
-    iconBackground.layer?.backgroundColor = bgColor.cgColor
-    iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
-    iconImageView.contentTintColor = iconColor
+    let iconColor: NSColor
+    if result.type == .website, let url = result.url, let host = url.host {
+      // Load favicon for website
+      iconBackground.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.1).cgColor
+      loadFavicon(for: host)
+      iconColor = .labelColor  // Default color for website icons
+    } else {
+      let (bgColor, iconName, color) = iconConfig(for: result.type)
+      iconBackground.layer?.backgroundColor = bgColor.cgColor
+      iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
+      iconImageView.contentTintColor = color
+      iconColor = color
+    }
 
     // Arc-style blue/teal selection background
     let arcBlue = NSColor(red: 74 / 255.0, green: 124 / 255.0, blue: 142 / 255.0, alpha: 1.0)
@@ -510,6 +532,21 @@ class SpotlightCellView: NSTableCellView {
     }
   }
 
+  private func loadFavicon(for host: String) {
+    // Use Google's favicon service
+    let faviconURLString = "https://www.google.com/s2/favicons?domain=\(host)&sz=64"
+    guard let faviconURL = URL(string: faviconURLString) else { return }
+
+    URLSession.shared.dataTask(with: faviconURL) { [weak self] data, _, _ in
+      guard let self = self, let data = data, let image = NSImage(data: data) else { return }
+
+      DispatchQueue.main.async {
+        self.iconImageView.image = image
+        self.iconImageView.contentTintColor = nil
+      }
+    }.resume()
+  }
+
   private func iconConfig(for type: SearchResultType) -> (NSColor, String, NSColor) {
     switch type {
     case .tab:
@@ -519,7 +556,25 @@ class SpotlightCellView: NSTableCellView {
     case .history:
       return (NSColor.systemGray.withAlphaComponent(0.15), "clock.fill", .secondaryLabelColor)
     case .suggestion:
-      return (NSColor.systemPurple.withAlphaComponent(0.15), "globe", .systemPurple)
+      return (NSColor.clear, "magnifyingglass", .secondaryLabelColor)
+    case .website:
+      return (NSColor.white.withAlphaComponent(0.1), "globe", .secondaryLabelColor)
     }
+  }
+}
+
+// MARK: - Custom Views for Event Handling
+
+class SpotlightRootView: NSView {
+  var onMouseDown: (() -> Void)?
+
+  override func mouseDown(with event: NSEvent) {
+    onMouseDown?()
+  }
+}
+
+class ClickBlockingVisualEffectView: NSVisualEffectView {
+  override func mouseDown(with event: NSEvent) {
+    // Consume event, do not propagate to root view
   }
 }
