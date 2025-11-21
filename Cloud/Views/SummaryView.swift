@@ -2,8 +2,6 @@ import SwiftUI
 
 struct SummaryView: View {
     @ObservedObject var viewModel: BrowserViewModel
-    @State private var scrollToBottom = false
-    @Namespace private var bottomID
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,46 +32,28 @@ struct SummaryView: View {
     // MARK: - Summary Content
 
     private var summaryContent: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Summary header
-                    HStack {
-                        Image(systemName: "doc.text.magnifyingglass")
-                            .font(.title2)
-                            .foregroundColor(.teal)
+        VStack(alignment: .leading, spacing: 16) {
+            // Summary header
+            HStack {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .font(.title2)
+                    .foregroundColor(.teal)
 
-                        Text("Page Summary")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
+                Text("Page Summary")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
 
-                        Spacer()
-                    }
-                    .padding(.bottom, 8)
-
-                    // Markdown content
-                    if !viewModel.summaryText.isEmpty {
-                        markdownText
-                            .id(bottomID)
-                    }
-
-                    // Bottom anchor for auto-scroll
-                    Color.clear
-                        .frame(height: 1)
-                        .id("bottom")
-                }
-                .padding(24)
+                Spacer()
             }
-            .onChange(of: viewModel.summaryText) {
-                // Auto-scroll to bottom as new text arrives
-                if !viewModel.isSummaryComplete {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
-                }
+            .padding(.bottom, 8)
+
+            // Markdown content
+            if !viewModel.summaryText.isEmpty {
+                markdownText
             }
         }
+        .padding(24)
     }
 
     private var markdownText: some View {
