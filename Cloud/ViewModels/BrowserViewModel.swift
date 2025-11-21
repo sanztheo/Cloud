@@ -83,7 +83,7 @@ class BrowserViewModel: ObservableObject {
 
   private func setupInitialData() {
     // Create default space
-    let personalSpace = Space(name: "Personal", icon: "person.fill", color: .blue)
+    let personalSpace = Space(name: "Personal", icon: "👤", color: .blue)
     spaces = [personalSpace]
     activeSpaceId = personalSpace.id
 
@@ -313,6 +313,15 @@ class BrowserViewModel: ObservableObject {
   func createNewSpace(name: String, icon: String, color: Color, theme: SpaceTheme? = nil) {
     let newSpace = Space(name: name, icon: icon, color: color, theme: theme)
     spaces.append(newSpace)
+  }
+
+  func updateSpace(id: UUID, name: String, icon: String, color: Color, theme: SpaceTheme?) {
+    if let index = spaces.firstIndex(where: { $0.id == id }) {
+      spaces[index].name = name
+      spaces[index].icon = icon
+      spaces[index].color = color
+      spaces[index].theme = theme
+    }
   }
 
   func selectSpace(_ spaceId: UUID) {

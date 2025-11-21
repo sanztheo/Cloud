@@ -32,9 +32,9 @@ struct SpaceNameField: View {
       TextField("Space name...", text: $name)
         .textFieldStyle(.plain)
         .font(.system(size: 18, weight: .medium))
-        .foregroundColor(AppColors.addressBarText)
+        .foregroundColor(.white)
         .padding(16)
-        .background(Color.black.opacity(0.2))
+        .background(Color.white.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
   }

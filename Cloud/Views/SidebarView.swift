@@ -11,6 +11,7 @@ struct SidebarView: View {
   @ObservedObject var viewModel: BrowserViewModel
   @State private var hoveredTabId: UUID?
   @State private var isAddingSpace: Bool = false
+  @State private var isEditingSpace: Space?
   @State private var isEditingAddress: Bool = false
   @FocusState private var isAddressFocused: Bool
 
@@ -86,6 +87,16 @@ struct SidebarView: View {
       }
     )
     .clipped()
+    .sheet(item: $isEditingSpace) { space in
+      SpaceEditSheet(
+        space: space,
+        isPresented: Binding(
+          get: { isEditingSpace != nil },
+          set: { if !$0 { isEditingSpace = nil } }
+        ),
+        viewModel: viewModel
+      )
+    }
   }
 
   // MARK: - Window Controls (Arc Style)
@@ -139,6 +150,17 @@ struct SidebarView: View {
     }
     .buttonStyle(.plain)
     .help(space.name)
+    .contextMenu {
+      Button("Settings") {
+        isEditingSpace = space
+      }
+
+      Divider()
+
+      Button("Delete Space", role: .destructive) {
+        viewModel.deleteSpace(space.id)
+      }
+    }
   }
 
 
