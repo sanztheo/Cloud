@@ -21,13 +21,23 @@
 
 ### 🗂️ Organisation
 - **Spaces** - Organisez vos onglets par contexte (Personnel, Travail, etc.)
+- **Thèmes personnalisables** - Mode Light/Dark par Space avec couleurs personnalisées
 - **Sidebar dynamique** - Accès rapide à vos onglets avec favicons automatiques
 - **Onglets épinglés** - Gardez vos sites favoris toujours accessibles
+- **Persistance des Spaces** - Vos espaces sont sauvegardés automatiquement
+
+### 🤖 IA Intégrée
+- **Summarize Page** - Résumez n'importe quelle page web avec l'IA (OpenAI)
+- **Streaming en temps réel** - Voir la réponse s'écrire en direct
+- **Multi-langues** - Choisissez la langue du résumé (FR, EN, ES, DE, IT, JP, CN)
+- **Cache intelligent** - Les résumés sont mis en cache pour un accès instantané
+- **Animation de flottement** - La WebView flotte pendant la génération
 
 ### 🎨 Interface
 - **Design minimal** - Interface épurée sans barre supérieure (style Arc)
 - **Animations fluides** - Transitions douces et naturelles avec Spring animations
-- **Mode sombre natif** - Interface adaptée à macOS
+- **Thèmes adaptatifs** - Interface qui s'adapte au thème du Space actif
+- **Traffic lights personnalisés** - Boutons de fenêtre intégrés à la sidebar
 
 ### ⚡ Performance
 - **WebKit optimisé** - Configuration WebKit personnalisée pour plus de rapidité
@@ -56,20 +66,26 @@ open Cloud.xcodeproj
 ⌘ + R
 ```
 
+### Configuration de l'IA
+1. Ouvrir les paramètres (`⌘ + ,`)
+2. Entrer votre clé API OpenAI
+3. Sélectionner la langue souhaitée pour les résumés
+
 ---
 
 ## ⌨️ Raccourcis clavier
 
 | Raccourci | Action |
 |-----------|--------|
-| `⌘ + T` | Nouvel onglet |
+| `⌘ + T` | Ouvrir Spotlight / Nouvel onglet |
 | `⌘ + W` | Fermer l'onglet |
-| `⌘ + K` | Ouvrir Spotlight |
-| `⌘ + B` | Toggle Sidebar |
-| `⌘ + ←` | Page précédente |
-| `⌘ + →` | Page suivante |
+| `⌘ + S` | Toggle Sidebar |
+| `⌘ + ,` | Paramètres |
+| `⌘ + [` | Page précédente |
+| `⌘ + ]` | Page suivante |
 | `⌘ + R` | Recharger la page |
-| `⌘ + L` | Focus barre d'adresse |
+| `⌘ + 1-9` | Accès rapide aux onglets |
+| `Escape` | Fermer Spotlight / Annuler résumé |
 
 ---
 
@@ -79,14 +95,19 @@ Le projet est structuré en architecture MVVM avec SwiftUI:
 
 ```
 Cloud/
-├── Models/          # Modèles de données (Tab, Space, Bookmark)
+├── Models/          # Modèles de données (Tab, Space, Bookmark, SpaceTheme)
 ├── ViewModels/      # Logique métier (BrowserViewModel)
 ├── Views/           # Interface SwiftUI
 │   ├── BrowserView.swift
-│   ├── SpotlightView.swift
-│   └── SidebarView.swift
+│   ├── SummaryView.swift
+│   ├── SidebarView.swift
+│   └── Spotlight/
 ├── Services/        # Services utilitaires
+│   ├── OpenAIService.swift
+│   ├── SummaryCacheService.swift
 │   └── OptimizedWebKitConfig.swift
+├── Extensions/      # Extensions Swift
+│   └── Color+Hex.swift
 └── Resources/       # Assets et configurations
 ```
 
@@ -98,11 +119,16 @@ Cloud/
 - **WebKit** - Moteur de rendu web
 - **Combine** - Programmation réactive
 - **AppKit** - Intégration système macOS
+- **OpenAI API** - Génération de résumés IA
 
 ---
 
 ## 🎯 Roadmap
 
+- [x] Summarize Page avec IA
+- [x] Thèmes personnalisables par Space
+- [x] Persistance des Spaces
+- [x] Multi-langues pour les résumés
 - [ ] Synchronisation iCloud
 - [ ] Extensions de navigateur
 - [ ] Profils utilisateurs
