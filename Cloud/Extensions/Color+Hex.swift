@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 extension Color {
   init(hex: String) {
@@ -31,5 +32,27 @@ extension Color {
       blue: Double(b) / 255,
       opacity: Double(a) / 255
     )
+  }
+
+  /// Adjust the brightness of a color
+  /// - Parameter amount: The amount to adjust (-1.0 to 1.0). Negative values darken, positive values brighten.
+  /// - Returns: A new Color with adjusted brightness
+  func adjustedBrightness(by amount: Double) -> Color {
+    // Convert SwiftUI Color to NSColor
+    let nsColor = NSColor(self)
+
+    // Get HSB components
+    var hue: CGFloat = 0
+    var saturation: CGFloat = 0
+    var brightness: CGFloat = 0
+    var alpha: CGFloat = 0
+
+    nsColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+    // Adjust brightness (clamp between 0 and 1)
+    let newBrightness = max(0, min(1, brightness + CGFloat(amount)))
+
+    // Create new color with adjusted brightness
+    return Color(hue: Double(hue), saturation: Double(saturation), brightness: Double(newBrightness), opacity: Double(alpha))
   }
 }

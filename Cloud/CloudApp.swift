@@ -89,9 +89,6 @@ struct CloudApp: App {
 // MARK: - App Delegate
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Configure app appearance
-        NSApp.appearance = NSAppearance(named: .darkAqua)
-
         // Configure window with custom traffic lights (Arc style)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             if let window = NSApp.windows.first {
