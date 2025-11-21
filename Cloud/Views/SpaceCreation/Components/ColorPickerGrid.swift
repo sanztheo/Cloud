@@ -29,43 +29,53 @@ struct ColorPickerGrid: View {
   var body: some View {
     GeometryReader { geometry in
       ZStack {
-        // Gradient de couleurs harmonieuses
+        // Gradient de couleurs harmonieuses (spectre complet)
         LinearGradient(
           gradient: Gradient(stops: [
-            .init(color: Color(hue: 0.0, saturation: 0.8, brightness: brightness), location: 0.0),
-            .init(color: Color(hue: 0.08, saturation: 0.8, brightness: brightness), location: 0.14),
-            .init(color: Color(hue: 0.15, saturation: 0.8, brightness: brightness), location: 0.28),
-            .init(color: Color(hue: 0.33, saturation: 0.8, brightness: brightness), location: 0.42),
-            .init(color: Color(hue: 0.55, saturation: 0.8, brightness: brightness), location: 0.57),
-            .init(color: Color(hue: 0.6, saturation: 0.8, brightness: brightness), location: 0.71),
-            .init(color: Color(hue: 0.75, saturation: 0.8, brightness: brightness), location: 0.85),
-            .init(color: Color(hue: 1.0, saturation: 0.8, brightness: brightness), location: 1.0)
+            .init(color: Color(hue: 0.0, saturation: 1.0, brightness: brightness), location: 0.0),      // Rouge
+            .init(color: Color(hue: 0.083, saturation: 1.0, brightness: brightness), location: 0.083),  // Orange
+            .init(color: Color(hue: 0.167, saturation: 1.0, brightness: brightness), location: 0.167),  // Jaune
+            .init(color: Color(hue: 0.25, saturation: 1.0, brightness: brightness), location: 0.25),    // Jaune-Vert
+            .init(color: Color(hue: 0.333, saturation: 1.0, brightness: brightness), location: 0.333),  // Vert
+            .init(color: Color(hue: 0.417, saturation: 1.0, brightness: brightness), location: 0.417),  // Cyan-Vert
+            .init(color: Color(hue: 0.5, saturation: 1.0, brightness: brightness), location: 0.5),      // Cyan
+            .init(color: Color(hue: 0.583, saturation: 1.0, brightness: brightness), location: 0.583),  // Bleu clair
+            .init(color: Color(hue: 0.667, saturation: 1.0, brightness: brightness), location: 0.667),  // Bleu
+            .init(color: Color(hue: 0.75, saturation: 1.0, brightness: brightness), location: 0.75),    // Violet
+            .init(color: Color(hue: 0.833, saturation: 1.0, brightness: brightness), location: 0.833),  // Magenta
+            .init(color: Color(hue: 0.917, saturation: 1.0, brightness: brightness), location: 0.917),  // Rose
+            .init(color: Color(hue: 1.0, saturation: 1.0, brightness: brightness), location: 1.0)       // Rouge
           ]),
           startPoint: .leading,
           endPoint: .trailing
         )
         .overlay(
-          // Gradient de saturation (transparent en haut, blanc en bas)
+          // Gradient vertical (saturé en haut, désaturé en bas)
           LinearGradient(
             gradient: Gradient(colors: [
-              Color.white.opacity(0.0),
-              Color.white.opacity(0.3)
+              Color.clear,
+              Color.white
             ]),
             startPoint: .top,
             endPoint: .bottom
           )
+        )
+        .overlay(
+          // Grille de points comme Arc
+          DotGridPattern()
+            .opacity(0.15)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
 
         // Cercle de sélection
         Circle()
           .fill(Color.white)
-          .frame(width: 24, height: 24)
-          .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+          .frame(width: 28, height: 28)
+          .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 2)
           .overlay(
             Circle()
-              .stroke(Color.white.opacity(0.5), lineWidth: 2)
-              .frame(width: 28, height: 28)
+              .stroke(Color.white, lineWidth: 3)
+              .frame(width: 36, height: 36)
           )
           .position(dragPosition)
       }
@@ -85,18 +95,20 @@ struct ColorPickerGrid: View {
         updateDragPosition(size: geometry.size)
       }
     }
+    .frame(height: 240) // Taille fixe réduite
     .aspectRatio(1, contentMode: .fit) // Carré
   }
 
   private func updateDragPosition(size: CGSize) {
-    dragPosition = CGPoint(
-      x: CGFloat(hue) * size.width,
-      y: (1 - CGFloat(saturation)) * size.height
-    )
+    // Limiter dans les bounds
+    let x = max(0, min(CGFloat(hue) * size.width, size.width))
+    let y = max(0, min((1 - CGFloat(saturation)) * size.height, size.height))
+
+    dragPosition = CGPoint(x: x, y: y)
   }
 
   private func updateColor(at location: CGPoint, in size: CGSize) {
-    // Limiter la position dans les bounds
+    // Limiter strictement la position dans les bounds
     let x = max(0, min(location.x, size.width))
     let y = max(0, min(location.y, size.height))
 
@@ -109,7 +121,24 @@ struct ColorPickerGrid: View {
     saturation = Double(1 - (y / size.height))
 
     // Assurer que la saturation reste dans une plage harmonieuse
-    saturation = max(0.4, min(saturation, 1.0))
+    saturation = max(0.3, min(saturation, 1.0))
+  }
+}
+
+// MARK: - Dot Grid Pattern
+struct DotGridPattern: View {
+  var body: some View {
+    Canvas { context, size in
+      let spacing: CGFloat = 8
+      let dotSize: CGFloat = 1.5
+
+      for x in stride(from: 0, through: size.width, by: spacing) {
+        for y in stride(from: 0, through: size.height, by: spacing) {
+          let rect = CGRect(x: x, y: y, width: dotSize, height: dotSize)
+          context.fill(Path(ellipseIn: rect), with: .color(.white))
+        }
+      }
+    }
   }
 }
 
