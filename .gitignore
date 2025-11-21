@@ -16,6 +16,7 @@ Icon
 # Xcode
 DerivedData/
 build/
+claudedocs/
 Build/
 
 # Xcode user data

@@ -15,6 +15,36 @@ struct SidebarView: View {
   @State private var isEditingAddress: Bool = false
   @FocusState private var isAddressFocused: Bool
 
+  // Couleur du texte selon le mode du thème
+  private var textColor: Color {
+    guard let theme = viewModel.activeSpace?.theme else {
+      return Color.black.opacity(0.8) // Default = auto = light text
+    }
+    return theme.mode == .dark ? .white : Color.black.opacity(0.8)
+  }
+
+  private var secondaryTextColor: Color {
+    guard let theme = viewModel.activeSpace?.theme else {
+      return Color.black.opacity(0.5) // Default = auto = light secondary
+    }
+    return theme.mode == .dark ? .white.opacity(0.6) : Color.black.opacity(0.5)
+  }
+
+  // Couleurs des boutons de navigation selon le mode
+  private var navigationButtonActive: Color {
+    guard let theme = viewModel.activeSpace?.theme else {
+      return Color.black.opacity(0.6) // Default = auto = light buttons
+    }
+    return theme.mode == .dark ? .white.opacity(0.6) : Color.black.opacity(0.6)
+  }
+
+  private var navigationButtonDisabled: Color {
+    guard let theme = viewModel.activeSpace?.theme else {
+      return Color.black.opacity(0.4) // Default = auto = light buttons
+    }
+    return theme.mode == .dark ? .white.opacity(0.3) : Color.black.opacity(0.4)
+  }
+
   var body: some View {
     VStack(spacing: 0) {
       // Window controls (Arc style)
@@ -169,7 +199,7 @@ struct SidebarView: View {
     VStack(alignment: .leading, spacing: 4) {
       Text("PINNED")
         .font(.system(size: 10, weight: .semibold))
-        .foregroundColor(.secondary)
+        .foregroundColor(secondaryTextColor)
         .padding(.horizontal, 8)
         .padding(.top, 4)
 
@@ -203,7 +233,7 @@ struct SidebarView: View {
         } else {
           Image(systemName: "globe")
             .font(.system(size: 14))
-            .foregroundColor(.secondary)
+            .foregroundColor(secondaryTextColor)
         }
       }
       .frame(width: 44, height: 44)
@@ -238,7 +268,7 @@ struct SidebarView: View {
         } else {
           Image(systemName: "globe")
             .font(.system(size: 12))
-            .foregroundColor(.secondary)
+            .foregroundColor(secondaryTextColor)
             .frame(width: 16, height: 16)
         }
 
@@ -247,7 +277,7 @@ struct SidebarView: View {
           .font(.system(size: 12))
           .lineLimit(1)
           .truncationMode(.tail)
-          .foregroundColor(.primary)
+          .foregroundColor(textColor)
 
         Spacer()
 
@@ -260,7 +290,7 @@ struct SidebarView: View {
           Button(action: { viewModel.closeTab(tab.id) }) {
             Image(systemName: "xmark")
               .font(.system(size: 8, weight: .bold))
-              .foregroundColor(.secondary)
+              .foregroundColor(secondaryTextColor)
               .frame(width: 16, height: 16)
               .background(Color(nsColor: .controlBackgroundColor))
               .clipShape(Circle())
@@ -332,7 +362,7 @@ struct SidebarView: View {
           .font(.system(size: 14, weight: .medium))
           .foregroundColor(
             viewModel.activeTab?.canGoBack == true
-              ? AppColors.navigationButtonActive : AppColors.navigationButtonDisabled
+              ? navigationButtonActive : navigationButtonDisabled
           )
           .frame(width: 32, height: 32)
           .background(AppColors.navigationButtonBackground)
@@ -348,7 +378,7 @@ struct SidebarView: View {
           .font(.system(size: 14, weight: .medium))
           .foregroundColor(
             viewModel.activeTab?.canGoForward == true
-              ? AppColors.navigationButtonActive : AppColors.navigationButtonDisabled
+              ? navigationButtonActive : navigationButtonDisabled
           )
           .frame(width: 32, height: 32)
           .background(AppColors.navigationButtonBackground)
@@ -364,7 +394,7 @@ struct SidebarView: View {
       Button(action: { viewModel.reload() }) {
         Image(systemName: viewModel.activeTab?.isLoading == true ? "xmark" : "arrow.clockwise")
           .font(.system(size: 12, weight: .medium))
-          .foregroundColor(AppColors.navigationButtonActive)
+          .foregroundColor(navigationButtonActive)
           .frame(width: 32, height: 32)
           .background(AppColors.navigationButtonBackground)
           .clipShape(Circle())
@@ -382,13 +412,13 @@ struct SidebarView: View {
         if let url = viewModel.activeTab?.url {
           Image(systemName: url.scheme == "https" ? "lock.fill" : "globe")
             .font(.system(size: 10))
-            .foregroundColor(url.scheme == "https" ? .green : .secondary)
+            .foregroundColor(url.scheme == "https" ? .green : secondaryTextColor)
         }
 
         // URL text (Domain only)
         Text(viewModel.activeTab?.url.host ?? "Search or enter URL")
           .font(.system(size: 12))
-          .foregroundColor(AppColors.addressBarText)
+          .foregroundColor(textColor)
           .lineLimit(1)
           .truncationMode(.tail)
 
@@ -421,7 +451,7 @@ struct SidebarView: View {
           Button(action: { isAddingSpace = true }) {
             Image(systemName: "plus")
               .font(.system(size: 14, weight: .medium))
-              .foregroundColor(.secondary)
+              .foregroundColor(secondaryTextColor)
               .frame(width: 40, height: 40)
               .background(Color(nsColor: .controlBackgroundColor))
               .clipShape(RoundedRectangle(cornerRadius: 10))

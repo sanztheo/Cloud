@@ -33,24 +33,37 @@ struct SpaceTheme: Equatable, Codable {
 
   // MARK: - Propriétés
   var mode: Mode = .auto
-  var baseColorHex: String = "0066FF" // Couleur de base en hex
-  var hue: Double = 210 // 0-360 degrés
+  var baseColorHex: String = "0066FF" // Couleur de base en hex (legacy)
+  var hue: Double = 0.583 // 0-1 (210° / 360 = 0.583)
   var saturation: Double = 0.7 // 0-1
   var noiseIntensity: Double = 0.3 // 0-1 (texture)
 
   // MARK: - Couleurs calculées
+
+  /// Brightness selon le mode
+  private var modeBrightness: Double {
+    switch mode {
+    case .light:
+      return 0.95 // Très lumineux
+    case .auto:
+      return 0.85 // Normal
+    case .dark:
+      return 0.65 // Plus sombre
+    }
+  }
+
   var baseColor: Color {
-    Color(hex: baseColorHex)
+    Color(hue: hue, saturation: saturation, brightness: modeBrightness)
   }
 
   /// Couleur de départ du gradient (plus saturée)
   var gradientStart: Color {
-    adjustedColor(baseSaturation: saturation, brightnessAdjust: 0.1)
+    Color(hue: hue, saturation: saturation, brightness: modeBrightness + 0.05)
   }
 
   /// Couleur de fin du gradient (plus claire)
   var gradientEnd: Color {
-    adjustedColor(baseSaturation: saturation * 0.6, brightnessAdjust: 0.3)
+    Color(hue: hue, saturation: saturation * 0.6, brightness: min(1.0, modeBrightness + 0.13))
   }
 
   /// Couleur du pattern de points
@@ -62,40 +75,12 @@ struct SpaceTheme: Equatable, Codable {
   var sidebarBackground: Color {
     switch mode {
     case .light:
-      return adjustedColor(baseSaturation: saturation * 0.4, brightnessAdjust: 0.5)
+      return Color(hue: hue, saturation: saturation * 0.4, brightness: 0.95)
     case .auto:
-      return adjustedColor(baseSaturation: saturation * 0.7, brightnessAdjust: 0)
+      return Color(hue: hue, saturation: saturation * 0.7, brightness: 0.85)
     case .dark:
-      return adjustedColor(baseSaturation: saturation * 0.9, brightnessAdjust: -0.3)
+      return Color(hue: hue, saturation: saturation * 0.9, brightness: 0.65)
     }
-  }
-
-  // MARK: - Méthodes helper
-
-  /// Ajuste la couleur en fonction de la saturation et de la luminosité
-  private func adjustedColor(baseSaturation: Double, brightnessAdjust: Double) -> Color {
-    let uiColor = NSColor(baseColor)
-    var hue: CGFloat = 0
-    var saturation: CGFloat = 0
-    var brightness: CGFloat = 0
-    var alpha: CGFloat = 0
-
-    uiColor.usingColorSpace(.deviceRGB)?.getHue(
-      &hue,
-      saturation: &saturation,
-      brightness: &brightness,
-      alpha: &alpha
-    )
-
-    let newHue = CGFloat(self.hue) / 360.0
-    let newSaturation = CGFloat(baseSaturation)
-    let newBrightness = max(0, min(1, brightness + CGFloat(brightnessAdjust)))
-
-    return Color(
-      hue: newHue,
-      saturation: newSaturation,
-      brightness: newBrightness
-    )
   }
 
   // MARK: - Couleurs prédéfinies (Arc-style)
