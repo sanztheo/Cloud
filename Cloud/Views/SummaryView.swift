@@ -76,12 +76,11 @@ struct SummaryView: View {
   }
 
   private var markdownText: some View {
-    Text(viewModel.summaryText)
+    Text(viewModel.summaryText.toMarkdown(baseColor: textColor))
       .font(.system(.body, design: .default))
-      .lineSpacing(4)
+      .lineSpacing(6)
       .textSelection(.enabled)
-      .foregroundStyle(textColor)
-      .animation(.easeInOut(duration: 0.2), value: viewModel.summaryText)
+      .animation(.easeInOut(duration: 0.15), value: viewModel.summaryText)
   }
 
   // MARK: - Loading View

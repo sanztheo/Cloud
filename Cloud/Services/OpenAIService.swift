@@ -170,19 +170,37 @@ class OpenAIService {
       ? ""
       : " Provide the summary in \(selectedLanguage)."
 
-    // Build request body
+    // Build request body with Markdown formatting instructions
     let requestBody: [String: Any] = [
       "model": model,
       "messages": [
         [
           "role": "system",
           "content":
-            "You are a helpful assistant that summarizes web page content concisely. Focus on the key points and main ideas.\(languageInstruction)",
+            """
+            You are an expert content summarizer. Create clear, well-structured summaries using Markdown.
+
+            ## Formatting Rules:
+            - Use **## Section Title** for main sections
+            - Use **### Subsection** for subsections when needed
+            - Use **bold** for key terms, names, and important concepts
+            - Use *italic* for emphasis or technical terms
+            - Use bullet points (- ) for lists of items, features, or steps
+            - Keep paragraphs short and scannable
+            - Start with a brief overview, then dive into details
+
+            ## Structure:
+            1. Brief overview (1-2 sentences)
+            2. Key points organized by theme
+            3. Important details or takeaways
+
+            Be concise but comprehensive. Focus on what matters most.\(languageInstruction)
+            """,
         ],
         [
           "role": "user",
           "content":
-            "Please summarize the following web page content:\n\n\(processedText)\(truncationNote)",
+            "Summarize this web page content:\n\n\(processedText)\(truncationNote)",
         ],
       ],
       "stream": true,
