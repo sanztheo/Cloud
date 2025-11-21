@@ -52,50 +52,18 @@ struct ThemePreview: View {
 
 // MARK: - Color Palette
 struct ColorPalette: View {
-  @Binding var selectedColorHex: String
+  @Binding var hue: Double
+  @Binding var saturation: Double
+  var mode: SpaceTheme.Mode
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Color")
         .font(.system(size: 12, weight: .medium))
-        .foregroundColor(.secondary)
+        .foregroundColor(.white.opacity(0.6))
 
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 12) {
-          ForEach(SpaceTheme.presetColors, id: \.hex) { preset in
-            ColorButton(
-              color: Color(hex: preset.hex),
-              isSelected: selectedColorHex == preset.hex,
-              action: { selectedColorHex = preset.hex }
-            )
-          }
-        }
-      }
+      ColorPickerGrid(hue: $hue, saturation: $saturation, mode: mode)
     }
-  }
-}
-
-struct ColorButton: View {
-  let color: Color
-  let isSelected: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      ZStack {
-        Circle()
-          .fill(color)
-          .frame(width: 36, height: 36)
-
-        if isSelected {
-          Circle()
-            .stroke(Color.white, lineWidth: 3)
-            .frame(width: 36, height: 36)
-            .shadow(color: .black.opacity(0.2), radius: 4)
-        }
-      }
-    }
-    .buttonStyle(.plain)
   }
 }
 

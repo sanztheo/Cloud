@@ -22,14 +22,7 @@ struct ThemeSelector: View {
       themeModes
 
       // Palette de couleurs
-      ColorPalette(selectedColorHex: $theme.baseColorHex)
-
-      // Sliders
-      ThemeSliders(
-        hue: $theme.hue,
-        saturation: $theme.saturation,
-        noise: $theme.noiseIntensity
-      )
+      ColorPalette(hue: $theme.hue, saturation: $theme.saturation, mode: theme.mode)
     }
   }
 
