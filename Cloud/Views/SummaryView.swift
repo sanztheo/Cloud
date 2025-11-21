@@ -92,31 +92,6 @@ struct SummaryView: View {
       HStack {
         Spacer()
         VStack(spacing: 16) {
-          // Animated loading indicator
-          ZStack {
-            Circle()
-              .stroke(
-                LinearGradient(
-                  colors: [.teal, .blue],
-                  startPoint: .topLeading,
-                  endPoint: .bottomTrailing
-                ),
-                lineWidth: 3
-              )
-              .frame(width: 60, height: 60)
-              .rotationEffect(.degrees(360))
-              .animation(
-                Animation.linear(duration: 2)
-                  .repeatForever(autoreverses: false),
-                value: true
-              )
-
-            Image(systemName: "brain")
-              .font(.title)
-              .foregroundColor(.teal)
-              .symbolEffect(.pulse)
-          }
-
           VStack(spacing: 8) {
             Text("Analyzing Page")
               .font(.title3)

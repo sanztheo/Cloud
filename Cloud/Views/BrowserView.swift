@@ -81,37 +81,35 @@ struct BrowserView: View {
   // MARK: - Web Content
   @ViewBuilder
   private var webContent: some View {
-    if viewModel.isSummarizing {
-      // Summary Mode: Shrink WebView and show summary below with global scroll
-      ScrollView(.vertical, showsIndicators: true) {
-        VStack(spacing: 24) {
-          // Shrunk WebView (centered, 600x400)
-          if let tabId = viewModel.activeTabId {
+    if let tabId = viewModel.activeTabId {
+      if viewModel.isSummarizing {
+        // Summary Mode: Shrink WebView and show summary below with global scroll
+        ScrollView(.vertical, showsIndicators: true) {
+          VStack(spacing: 24) {
+            // Shrunk WebView (centered, 600x400)
             WebViewRepresentable(tabId: tabId, viewModel: viewModel)
               .frame(width: 600, height: 400)
               .clipShape(RoundedRectangle(cornerRadius: 12))
               .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
-              .id(tabId)
-          }
 
-          // Summary View below
-          SummaryView(viewModel: viewModel)
-            .frame(maxWidth: 800)
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            // Summary View below
+            SummaryView(viewModel: viewModel)
+              .frame(maxWidth: 800)
+              .transition(.opacity.combined(with: .move(edge: .bottom)))
+          }
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 40)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .transition(.scale(scale: 0.95).combined(with: .opacity))
-    } else {
-      // Normal Mode: Full WebView
-      if let tabId = viewModel.activeTabId {
-        WebViewRepresentable(tabId: tabId, viewModel: viewModel)
-          .id(tabId)  // Force recreation when tab changes
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transition(.scale(scale: 0.95).combined(with: .opacity))
+        .id("summary-\(tabId)")  // Different ID for summary mode to trigger transition
       } else {
-        emptyState
+        // Normal Mode: Full WebView
+        WebViewRepresentable(tabId: tabId, viewModel: viewModel)
+          .id("normal-\(tabId)")  // Different ID for normal mode
       }
+    } else {
+      emptyState
     }
   }
 
