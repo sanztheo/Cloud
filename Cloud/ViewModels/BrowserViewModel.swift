@@ -25,6 +25,13 @@ class BrowserViewModel: ObservableObject {
   @Published var spotlightSelectedIndex: Int = 0
   @Published var transitionDirection: Edge = .trailing
 
+  // Summary functionality
+  @Published var isSummarizing: Bool = false
+  @Published var summaryText: String = ""
+  @Published var isSummaryComplete: Bool = false
+  @Published var summarizingStatus: String = "Summarizing page..."
+  @Published var summaryError: String? = nil
+
   // MARK: - WebView Management
   private var webViews: [UUID: WKWebView] = [:]
   private var cancellables = Set<AnyCancellable>()
@@ -32,6 +39,10 @@ class BrowserViewModel: ObservableObject {
   // MARK: - Search Suggestions
   private let suggestionsService = GoogleSuggestionsService()
   @Published var suggestions: [SearchResult] = []
+
+  // MARK: - Services
+  private let openAIService = OpenAIService()
+  private let cacheService = SummaryCacheService.shared
 
   // MARK: - Optimized Configuration (2025 Best Practices)
   // User-Agent STABLE - pas de rotation (red flag pour les systèmes anti-bot)
@@ -417,6 +428,12 @@ class BrowserViewModel: ObservableObject {
     }
   }
 
+  func hideSpotlight() {
+    isSpotlightVisible = false
+    searchQuery = ""
+    spotlightSelectedIndex = 0
+  }
+
   func openLocation() {
     if let url = activeTab?.url {
       searchQuery = url.absoluteString
@@ -427,8 +444,25 @@ class BrowserViewModel: ObservableObject {
   }
 
   func searchResults(for query: String) -> [SearchResult] {
+    var results: [SearchResult] = []
+
+    // Add "Summarize Page" command if there's an active tab with content
+    if let activeTab = tabs.first(where: { $0.id == activeTabId }),
+       !activeTab.isLoading,
+       activeTab.url.absoluteString != "about:blank",
+       query.localizedCaseInsensitiveContains("summ") || query.isEmpty {
+      results.append(SearchResult(
+        type: .command,
+        title: "Summarize Page",
+        subtitle: "Generate AI summary of current page",
+        url: nil,
+        tabId: activeTabId,
+        favicon: nil
+      ))
+    }
+
     if query.isEmpty {
-      return tabs.map { tab in
+      results.append(contentsOf: tabs.map { tab in
         SearchResult(
           type: .tab,
           title: tab.title,
@@ -437,10 +471,10 @@ class BrowserViewModel: ObservableObject {
           tabId: tab.id,
           favicon: tab.favicon
         )
-      }
+      })
+      return results
     }
 
-    var results: [SearchResult] = []
     let lowercasedQuery = query.lowercased()
 
     // 1. Check if query looks like a URL (contains dot and no spaces)
@@ -540,6 +574,86 @@ class BrowserViewModel: ObservableObject {
         print("  → Creating new tab for URL: \(url)")
         createNewTab(url: url)
       }
+    case .command:
+      // Handle Summarize Page command
+      hideSpotlight()
+      Task {
+        await summarizePage()
+      }
+    }
+  }
+
+  // MARK: - Summary Methods
+  @MainActor
+  func summarizePage() async {
+    guard let activeTab = tabs.first(where: { $0.id == activeTabId }),
+          let webView = getWebView(for: activeTab.id) else {
+      summaryError = "No active page to summarize"
+      return
+    }
+
+    // Reset state
+    isSummarizing = true
+    summaryText = ""
+    isSummaryComplete = false
+    summaryError = nil
+    summarizingStatus = "Extracting page content..."
+
+    do {
+      // Extract page content using JavaScript
+      let pageContent = try await webView.evaluateJavaScript("document.body.innerText") as? String ?? ""
+
+      guard !pageContent.isEmpty else {
+        throw NSError(domain: "BrowserViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "Page has no text content"])
+      }
+
+      // Clean content (remove excessive whitespace)
+      let cleanedContent = pageContent
+        .components(separatedBy: .whitespacesAndNewlines)
+        .filter { !$0.isEmpty }
+        .joined(separator: " ")
+
+      // Generate content hash for caching
+      let contentHash = await cacheService.generateContentHash(cleanedContent)
+
+      // Check cache first
+      if let cachedSummary = await cacheService.getCachedSummary(for: activeTab.url, contentHash: contentHash) {
+        summarizingStatus = "Loading cached summary..."
+        summaryText = cachedSummary
+        isSummaryComplete = true
+        return
+      }
+
+      // Generate summary via API
+      summarizingStatus = "Generating AI summary..."
+      let stream = try await openAIService.streamSummary(for: cleanedContent)
+
+      // Process streaming response
+      for try await chunk in stream {
+        summaryText += chunk
+      }
+
+      // Cache the generated summary
+      await cacheService.cacheSummary(summaryText, for: activeTab.url, contentHash: contentHash)
+
+      isSummaryComplete = true
+
+    } catch let error as OpenAIError {
+      summaryError = error.localizedDescription
+      isSummarizing = false
+    } catch {
+      summaryError = "Failed to generate summary: \(error.localizedDescription)"
+      isSummarizing = false
+    }
+  }
+
+  @MainActor
+  func restorePage() {
+    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+      isSummarizing = false
+      summaryText = ""
+      isSummaryComplete = false
+      summaryError = nil
     }
   }
 

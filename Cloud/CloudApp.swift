@@ -34,6 +34,11 @@ struct CloudApp: App {
                     NotificationCenter.default.post(name: .showSpotlight, object: nil)
                 }
                 .keyboardShortcut("t", modifiers: .command)
+
+                Button("Settings...") {
+                    NotificationCenter.default.post(name: .showSettings, object: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
             }
 
             // View menu
@@ -117,6 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 extension Notification.Name {
     static let newTab = Notification.Name("newTab")
     static let showSpotlight = Notification.Name("showSpotlight")
+    static let showSettings = Notification.Name("showSettings")
     static let toggleSidebar = Notification.Name("toggleSidebar")
     static let goBack = Notification.Name("goBack")
     static let goForward = Notification.Name("goForward")

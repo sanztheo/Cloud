@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BrowserView: View {
   @StateObject private var viewModel = BrowserViewModel()
+  @State private var showSettings = false
 
   var body: some View {
     ZStack {
@@ -42,6 +43,7 @@ struct BrowserView: View {
           .transition(.opacity.combined(with: .scale(scale: 0.95)))
       }
     }
+    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: viewModel.isSummarizing)
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSpotlightVisible)
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSidebarCollapsed)
     .frame(minWidth: 800, minHeight: 600)
@@ -68,16 +70,45 @@ struct BrowserView: View {
     .onReceive(NotificationCenter.default.publisher(for: .reload)) { _ in
       viewModel.reload()
     }
+    .onReceive(NotificationCenter.default.publisher(for: .showSettings)) { _ in
+      showSettings = true
+    }
+    .sheet(isPresented: $showSettings) {
+      SettingsWindow()
+    }
   }
 
   // MARK: - Web Content
   @ViewBuilder
   private var webContent: some View {
-    if let tabId = viewModel.activeTabId {
-      WebViewRepresentable(tabId: tabId, viewModel: viewModel)
-        .id(tabId)  // Force recreation when tab changes
+    if viewModel.isSummarizing {
+      // Summary Mode: Shrink WebView and show summary below
+      VStack(spacing: 24) {
+        // Shrunk WebView (centered, 600x400)
+        if let tabId = viewModel.activeTabId {
+          WebViewRepresentable(tabId: tabId, viewModel: viewModel)
+            .frame(width: 600, height: 400)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+            .id(tabId)
+        }
+
+        // Summary View below
+        SummaryView(viewModel: viewModel)
+          .frame(maxWidth: 800)
+          .transition(.opacity.combined(with: .move(edge: .bottom)))
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .padding(.vertical, 40)
+      .transition(.scale(scale: 0.95).combined(with: .opacity))
     } else {
-      emptyState
+      // Normal Mode: Full WebView
+      if let tabId = viewModel.activeTabId {
+        WebViewRepresentable(tabId: tabId, viewModel: viewModel)
+          .id(tabId)  // Force recreation when tab changes
+      } else {
+        emptyState
+      }
     }
   }
 

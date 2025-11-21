@@ -120,6 +120,7 @@ enum SearchResultType {
   case history
   case suggestion
   case website
+  case command  // For Spotlight commands like "Summarize Page"
 }
 
 struct SearchResult: Identifiable {

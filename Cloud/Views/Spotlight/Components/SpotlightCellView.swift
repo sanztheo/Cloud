@@ -222,6 +222,8 @@ class SpotlightCellView: NSTableCellView {
       return (NSColor.clear, "magnifyingglass", .secondaryLabelColor)
     case .website:
       return (NSColor.white.withAlphaComponent(0.1), "globe", .secondaryLabelColor)
+    case .command:
+      return (NSColor.systemPurple.withAlphaComponent(0.15), "sparkles", .systemPurple)
     }
   }
 }
