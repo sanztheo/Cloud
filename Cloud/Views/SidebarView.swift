@@ -10,6 +10,8 @@ import SwiftUI
 struct SidebarView: View {
   @ObservedObject var viewModel: BrowserViewModel
   @State private var hoveredTabId: UUID?
+  @State private var hoveredSpaceId: UUID?
+  @State private var isHoveringAddSpace: Bool = false
   @State private var isAddingSpace: Bool = false
   @State private var isEditingSpace: Space?
   @State private var isEditingAddress: Bool = false
@@ -169,7 +171,8 @@ struct SidebarView: View {
           .frame(width: 40, height: 40)
           .background(
             viewModel.activeSpaceId == space.id
-              ? space.color.opacity(0.3) : Color(nsColor: .controlBackgroundColor)
+              ? space.color.opacity(0.3)
+              : (hoveredSpaceId == space.id ? Color.black.opacity(0.2) : Color.clear)
           )
           .clipShape(RoundedRectangle(cornerRadius: 10))
           .overlay(
@@ -179,6 +182,9 @@ struct SidebarView: View {
       }
     }
     .buttonStyle(.plain)
+    .onHover { isHovering in
+      hoveredSpaceId = isHovering ? space.id : nil
+    }
     .help(space.name)
     .contextMenu {
       Button("Settings") {
@@ -453,10 +459,13 @@ struct SidebarView: View {
               .font(.system(size: 14, weight: .medium))
               .foregroundColor(secondaryTextColor)
               .frame(width: 40, height: 40)
-              .background(Color(nsColor: .controlBackgroundColor))
+              .background(isHoveringAddSpace ? Color.black.opacity(0.2) : Color.clear)
               .clipShape(RoundedRectangle(cornerRadius: 10))
           }
           .buttonStyle(.plain)
+          .onHover { isHovering in
+            isHoveringAddSpace = isHovering
+          }
           .sheet(isPresented: $isAddingSpace) {
             SpaceCreationSheet(
               isPresented: $isAddingSpace,
