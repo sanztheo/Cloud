@@ -10,6 +10,7 @@ import SwiftUI
 struct BrowserView: View {
   @StateObject private var viewModel = BrowserViewModel()
   @State private var showSettings = false
+  @State private var floatingRotation: Double = 0
 
   var body: some View {
     ZStack {
@@ -86,11 +87,32 @@ struct BrowserView: View {
         // Summary Mode: Shrink WebView and show summary below with global scroll
         ScrollView(.vertical, showsIndicators: true) {
           VStack(spacing: 24) {
-            // Shrunk WebView (centered, 600x400)
+            // Shrunk WebView (centered, 600x400) with floating animation
             WebViewRepresentable(tabId: tabId, viewModel: viewModel)
               .frame(width: 600, height: 400)
               .clipShape(RoundedRectangle(cornerRadius: 12))
               .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+              .rotation3DEffect(
+                .degrees(viewModel.isSummaryComplete ? 0 : floatingRotation),
+                axis: (x: 0, y: 1, z: 0)
+              )
+              .onAppear {
+                if !viewModel.isSummaryComplete {
+                  withAnimation(
+                    Animation.easeInOut(duration: 3)
+                      .repeatForever(autoreverses: true)
+                  ) {
+                    floatingRotation = 8
+                  }
+                }
+              }
+              .onChange(of: viewModel.isSummaryComplete) { _, isComplete in
+                if isComplete {
+                  withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    floatingRotation = 0
+                  }
+                }
+              }
 
             // Summary View below
             SummaryView(viewModel: viewModel)
@@ -164,10 +186,16 @@ struct BrowserView: View {
         }
       }
 
-      // Escape to close spotlight
-      if event.keyCode == 53 && viewModel.isSpotlightVisible {
-        viewModel.isSpotlightVisible = false
-        return nil
+      // Escape to close spotlight or restore page from summary
+      if event.keyCode == 53 {
+        if viewModel.isSpotlightVisible {
+          viewModel.isSpotlightVisible = false
+          return nil
+        } else if viewModel.isSummarizing {
+          // If summarizing, restore page (abort if still generating)
+          viewModel.restorePage()
+          return nil
+        }
       }
 
       return event
