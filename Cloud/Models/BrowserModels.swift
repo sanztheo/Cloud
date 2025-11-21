@@ -53,17 +53,20 @@ struct Space: Identifiable, Equatable {
   var name: String
   var icon: String
   var color: Color
+  var theme: SpaceTheme?
 
   init(
     id: UUID = UUID(),
     name: String = "Personal",
     icon: String = "person.fill",
-    color: Color = .blue
+    color: Color = .blue,
+    theme: SpaceTheme? = nil
   ) {
     self.id = id
     self.name = name
     self.icon = icon
     self.color = color
+    self.theme = theme
   }
 }
 

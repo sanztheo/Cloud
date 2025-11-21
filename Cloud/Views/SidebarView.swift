@@ -11,7 +11,6 @@ struct SidebarView: View {
   @ObservedObject var viewModel: BrowserViewModel
   @State private var hoveredTabId: UUID?
   @State private var isAddingSpace: Bool = false
-  @State private var newSpaceName: String = ""
   @State private var isEditingAddress: Bool = false
   @FocusState private var isAddressFocused: Bool
 
@@ -35,12 +34,6 @@ struct SidebarView: View {
       addressBar
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-
-      Divider()
-        .padding(.horizontal, 12)
-
-      // Space selector
-      spaceSelector
 
       Divider()
         .padding(.horizontal, 12)
@@ -81,7 +74,7 @@ struct SidebarView: View {
     .frame(width: viewModel.isSidebarCollapsed ? 0 : 240)
     .background(
       ZStack {
-        Color(hex: "72B4FF")
+        AppColors.sidebarBackground(for: viewModel.activeSpace?.theme)
         SwipeGestureView(
           onSwipeLeft: {
             viewModel.switchToNextSpace()
@@ -144,8 +137,11 @@ struct SidebarView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $isAddingSpace) {
-          addSpacePopover
+        .sheet(isPresented: $isAddingSpace) {
+          SpaceCreationSheet(
+            isPresented: $isAddingSpace,
+            viewModel: viewModel
+          )
         }
       }
       .padding(.horizontal, 12)
@@ -156,52 +152,24 @@ struct SidebarView: View {
   private func spaceButton(_ space: Space) -> some View {
     Button(action: { viewModel.selectSpace(space.id) }) {
       VStack(spacing: 4) {
-        Image(systemName: space.icon)
-          .font(.system(size: 14))
-          .foregroundColor(viewModel.activeSpaceId == space.id ? .white : space.color)
-          .frame(width: 32, height: 32)
+        Text(space.icon)
+          .font(.system(size: 18))
+          .frame(width: 40, height: 40)
           .background(
             viewModel.activeSpaceId == space.id
-              ? space.color : Color(nsColor: .controlBackgroundColor)
+              ? space.color.opacity(0.3) : Color(nsColor: .controlBackgroundColor)
           )
-          .clipShape(RoundedRectangle(cornerRadius: 8))
+          .clipShape(RoundedRectangle(cornerRadius: 10))
+          .overlay(
+            RoundedRectangle(cornerRadius: 10)
+              .stroke(viewModel.activeSpaceId == space.id ? space.color : Color.clear, lineWidth: 2)
+          )
       }
     }
     .buttonStyle(.plain)
     .help(space.name)
   }
 
-  private var addSpacePopover: some View {
-    VStack(spacing: 12) {
-      Text("New Space")
-        .font(.headline)
-
-      TextField("Space name", text: $newSpaceName)
-        .textFieldStyle(.roundedBorder)
-
-      HStack {
-        Button("Cancel") {
-          isAddingSpace = false
-          newSpaceName = ""
-        }
-
-        Button("Create") {
-          if !newSpaceName.isEmpty {
-            viewModel.createNewSpace(
-              name: newSpaceName,
-              icon: "folder.fill",
-              color: .purple
-            )
-            newSpaceName = ""
-            isAddingSpace = false
-          }
-        }
-        .buttonStyle(.borderedProminent)
-      }
-    }
-    .padding()
-    .frame(width: 200)
-  }
 
   // MARK: - Pinned Tabs Section
   private func pinnedTabsSection(_ tabs: [BrowserTab]) -> some View {
@@ -307,8 +275,8 @@ struct SidebarView: View {
           .buttonStyle(.plain)
         }
       }
-      .padding(.horizontal, 8)
-      .padding(.vertical, 6)
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
       .background(
         RoundedRectangle(cornerRadius: 6)
           .fill(
@@ -450,32 +418,32 @@ struct SidebarView: View {
     VStack(spacing: 8) {
       Divider()
 
-      HStack(spacing: 12) {
-        // New tab button
-        Button(action: { viewModel.createNewTab() }) {
-          HStack(spacing: 4) {
-            Image(systemName: "plus")
-              .font(.system(size: 12, weight: .medium))
-            Text("New Tab")
-              .font(.system(size: 12))
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 8) {
+          ForEach(viewModel.spaces) { space in
+            spaceButton(space)
           }
-          .foregroundColor(.secondary)
-        }
-        .buttonStyle(.plain)
-        .keyboardShortcut("t", modifiers: .command)
 
-        Spacer()
-
-        // Settings button
-        Button(action: {}) {
-          Image(systemName: "gearshape")
-            .font(.system(size: 12))
-            .foregroundColor(.secondary)
+          // Add space button
+          Button(action: { isAddingSpace = true }) {
+            Image(systemName: "plus")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundColor(.secondary)
+              .frame(width: 40, height: 40)
+              .background(Color(nsColor: .controlBackgroundColor))
+              .clipShape(RoundedRectangle(cornerRadius: 10))
+          }
+          .buttonStyle(.plain)
+          .sheet(isPresented: $isAddingSpace) {
+            SpaceCreationSheet(
+              isPresented: $isAddingSpace,
+              viewModel: viewModel
+            )
+          }
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
       }
-      .padding(.horizontal, 12)
-      .padding(.bottom, 8)
     }
   }
 }

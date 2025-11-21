@@ -310,8 +310,8 @@ class BrowserViewModel: ObservableObject {
   }
 
   // MARK: - Space Management
-  func createNewSpace(name: String, icon: String, color: Color) {
-    let newSpace = Space(name: name, icon: icon, color: color)
+  func createNewSpace(name: String, icon: String, color: Color, theme: SpaceTheme? = nil) {
+    let newSpace = Space(name: name, icon: icon, color: color, theme: theme)
     spaces.append(newSpace)
   }
 

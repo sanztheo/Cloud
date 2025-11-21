@@ -82,8 +82,24 @@ struct AppColors {
 
   // MARK: - Sidebar
 
-  /// Fond de la sidebar
+  /// Fond de la sidebar (par défaut)
   static let sidebarBackground = Color(hex: "72B4FF")
+
+  /// Fond de la sidebar basé sur un thème
+  static func sidebarBackground(for theme: SpaceTheme?) -> Color {
+    guard let theme = theme else {
+      return sidebarBackground
+    }
+    return theme.sidebarBackground
+  }
+
+  /// Couleur de fond dynamique basée sur un thème
+  static func background(for theme: SpaceTheme?) -> Color {
+    guard let theme = theme else {
+      return background
+    }
+    return theme.sidebarBackground
+  }
 
   // MARK: - WebView
 
