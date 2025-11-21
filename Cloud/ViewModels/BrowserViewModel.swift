@@ -400,6 +400,9 @@ class BrowserViewModel: ObservableObject {
     tabs.append(newTab)
     activeTabId = newTab.id
     _ = createWebView(for: newTab)
+
+    // Load favicon for the new tab
+    loadFavicon(for: newTab.id, url: targetUrl)
   }
 
   func closeTab(_ tabId: UUID) {
@@ -547,6 +550,8 @@ class BrowserViewModel: ObservableObject {
       if tabId == activeTabId {
         addressBarText = url.absoluteString
       }
+      // Load favicon when URL changes
+      loadFavicon(for: tabId, url: url)
     }
     if let isLoading = isLoading {
       tabs[index].isLoading = isLoading
@@ -557,6 +562,27 @@ class BrowserViewModel: ObservableObject {
     if let canGoForward = canGoForward {
       tabs[index].canGoForward = canGoForward
     }
+  }
+
+  // MARK: - Favicon Loading
+  private func loadFavicon(for tabId: UUID, url: URL) {
+    guard let host = url.host else { return }
+
+    // Use Google's favicon service
+    let faviconURLString = "https://www.google.com/s2/favicons?domain=\(host)&sz=64"
+    guard let faviconURL = URL(string: faviconURLString) else { return }
+
+    URLSession.shared.dataTask(with: faviconURL) { [weak self] data, _, _ in
+      guard let self = self,
+        let data = data,
+        let image = NSImage(data: data),
+        let index = self.tabs.firstIndex(where: { $0.id == tabId })
+      else { return }
+
+      DispatchQueue.main.async {
+        self.tabs[index].favicon = image
+      }
+    }.resume()
   }
 
   // MARK: - Space Management
