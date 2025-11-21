@@ -66,7 +66,19 @@ struct SidebarView: View {
       bottomActions
     }
     .frame(width: viewModel.isSidebarCollapsed ? 0 : 240)
-    .background(VisualEffectView(material: .sidebar, blendingMode: .behindWindow))
+    .background(
+      ZStack {
+        VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
+        SwipeGestureView(
+          onSwipeLeft: {
+            viewModel.switchToNextSpace()
+          },
+          onSwipeRight: {
+            viewModel.switchToPreviousSpace()
+          }
+        )
+      }
+    )
     .clipped()
   }
 

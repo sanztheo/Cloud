@@ -105,7 +105,8 @@ class BrowserViewModel: ObservableObject {
     // ✓ Utiliser la configuration optimisée (cohérence > stealth)
     let configuration = OptimizedWebKitConfig.createConfiguration()
 
-    let webView = WKWebView(
+    // Use CustomWKWebView to disable rubber banding
+    let webView = CustomWKWebView(
       frame: NSRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
 
     // ✓ Setup avec User-Agent STABLE et configuration optimale
@@ -338,6 +339,24 @@ class BrowserViewModel: ObservableObject {
     if activeSpaceId == spaceId {
       activeSpaceId = firstSpaceId
     }
+  }
+
+  func switchToNextSpace() {
+    guard let currentId = activeSpaceId,
+      let currentIndex = spaces.firstIndex(where: { $0.id == currentId })
+    else { return }
+
+    let nextIndex = (currentIndex + 1) % spaces.count
+    selectSpace(spaces[nextIndex].id)
+  }
+
+  func switchToPreviousSpace() {
+    guard let currentId = activeSpaceId,
+      let currentIndex = spaces.firstIndex(where: { $0.id == currentId })
+    else { return }
+
+    let prevIndex = (currentIndex - 1 + spaces.count) % spaces.count
+    selectSpace(spaces[prevIndex].id)
   }
 
   // MARK: - Bookmarks
