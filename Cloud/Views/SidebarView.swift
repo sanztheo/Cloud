@@ -58,6 +58,13 @@ struct SidebarView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
+        .id(viewModel.activeSpaceId)
+        .transition(
+          .asymmetric(
+            insertion: .move(edge: viewModel.transitionDirection),
+            removal: .move(edge: viewModel.transitionDirection == .leading ? .trailing : .leading)
+          )
+        )
       }
 
       Spacer()
@@ -68,7 +75,7 @@ struct SidebarView: View {
     .frame(width: viewModel.isSidebarCollapsed ? 0 : 240)
     .background(
       ZStack {
-        VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
+        Color(hex: "72B4FF")
         SwipeGestureView(
           onSwipeLeft: {
             viewModel.switchToNextSpace()

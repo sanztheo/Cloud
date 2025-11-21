@@ -23,6 +23,7 @@ class BrowserViewModel: ObservableObject {
   @Published var searchQuery: String = ""
   @Published var addressBarText: String = ""
   @Published var spotlightSelectedIndex: Int = 0
+  @Published var transitionDirection: Edge = .trailing
 
   // MARK: - WebView Management
   private var webViews: [UUID: WKWebView] = [:]
@@ -346,8 +347,11 @@ class BrowserViewModel: ObservableObject {
       let currentIndex = spaces.firstIndex(where: { $0.id == currentId })
     else { return }
 
+    transitionDirection = .trailing
     let nextIndex = (currentIndex + 1) % spaces.count
-    selectSpace(spaces[nextIndex].id)
+    withAnimation(.easeInOut(duration: 0.25)) {
+      selectSpace(spaces[nextIndex].id)
+    }
   }
 
   func switchToPreviousSpace() {
@@ -355,8 +359,11 @@ class BrowserViewModel: ObservableObject {
       let currentIndex = spaces.firstIndex(where: { $0.id == currentId })
     else { return }
 
+    transitionDirection = .leading
     let prevIndex = (currentIndex - 1 + spaces.count) % spaces.count
-    selectSpace(spaces[prevIndex].id)
+    withAnimation(.easeInOut(duration: 0.25)) {
+      selectSpace(spaces[prevIndex].id)
+    }
   }
 
   // MARK: - Bookmarks
