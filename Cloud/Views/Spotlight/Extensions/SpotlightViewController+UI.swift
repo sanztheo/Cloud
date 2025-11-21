@@ -83,11 +83,25 @@ extension SpotlightViewController {
     searchField.translatesAutoresizingMaskIntoConstraints = false
     searchContainer.addSubview(searchField)
 
+    // Icon Image View
+    iconImageView = NSImageView()
+    iconImageView.image = NSImage(
+      systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
+    iconImageView.contentTintColor = .secondaryLabelColor
+    iconImageView.translatesAutoresizingMaskIntoConstraints = false
+    searchContainer.addSubview(iconImageView)
+
     NSLayoutConstraint.activate([
-      searchField.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 20),
+      iconImageView.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 20),
+      iconImageView.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
+      iconImageView.widthAnchor.constraint(equalToConstant: 24),
+      iconImageView.heightAnchor.constraint(equalToConstant: 24),
+
+      searchField.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 12),
       searchField.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -20),
-      searchField.topAnchor.constraint(equalTo: searchContainer.topAnchor, constant: 18),
-      searchField.bottomAnchor.constraint(equalTo: searchContainer.bottomAnchor, constant: -18),
+      searchField.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
+      searchField.heightAnchor.constraint(equalToConstant: 32),
+
       searchContainer.heightAnchor.constraint(equalToConstant: 68),
     ])
 
@@ -117,6 +131,7 @@ extension SpotlightViewController {
   @objc func searchFieldChanged() {
     viewModel.searchQuery = searchField.stringValue
     updateResults()
+    updateIcon()
     tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
   }
 

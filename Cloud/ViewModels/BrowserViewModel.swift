@@ -382,6 +382,15 @@ class BrowserViewModel: ObservableObject {
     }
   }
 
+  func openLocation() {
+    if let url = activeTab?.url {
+      searchQuery = url.absoluteString
+    } else {
+      searchQuery = ""
+    }
+    isSpotlightVisible = true
+  }
+
   func searchResults(for query: String) -> [SearchResult] {
     if query.isEmpty {
       return tabs.map { tab in
@@ -480,7 +489,8 @@ class BrowserViewModel: ObservableObject {
   func selectSearchResult(_ result: SearchResult) {
     isSpotlightVisible = false
 
-    print("🔍 Spotlight: selectSearchResult called with type: \(result.type), title: \(result.title)")
+    print(
+      "🔍 Spotlight: selectSearchResult called with type: \(result.type), title: \(result.title)")
 
     switch result.type {
     case .tab:

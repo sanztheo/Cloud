@@ -44,6 +44,9 @@ class SpotlightCellView: NSTableCellView {
 
     // Icon
     iconImageView = NSImageView()
+    iconImageView.wantsLayer = true
+    iconImageView.layer?.cornerRadius = 4
+    iconImageView.layer?.masksToBounds = true
     iconImageView.translatesAutoresizingMaskIntoConstraints = false
     iconBackground.addSubview(iconImageView)
 

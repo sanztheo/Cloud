@@ -182,6 +182,7 @@ struct SidebarView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 20, height: 20)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
         } else {
           Image(systemName: "globe")
             .font(.system(size: 14))
@@ -216,6 +217,7 @@ struct SidebarView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 16, height: 16)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
         } else {
           Image(systemName: "globe")
             .font(.system(size: 12))
@@ -355,37 +357,34 @@ struct SidebarView: View {
 
   // MARK: - Address Bar (Arc Style)
   private var addressBar: some View {
-    HStack(spacing: 8) {
-      // Security indicator
-      if let url = viewModel.activeTab?.url {
-        Image(systemName: url.scheme == "https" ? "lock.fill" : "globe")
-          .font(.system(size: 10))
-          .foregroundColor(url.scheme == "https" ? .green : .secondary)
-      }
+    Button(action: { viewModel.openLocation() }) {
+      HStack(spacing: 8) {
+        // Security indicator
+        if let url = viewModel.activeTab?.url {
+          Image(systemName: url.scheme == "https" ? "lock.fill" : "globe")
+            .font(.system(size: 10))
+            .foregroundColor(url.scheme == "https" ? .green : .secondary)
+        }
 
-      // URL field
-      TextField("Search or enter URL", text: $viewModel.addressBarText)
-        .textFieldStyle(.plain)
-        .font(.system(size: 12))
-        .focused($isAddressFocused)
-        .onSubmit {
-          viewModel.navigateToAddress(viewModel.addressBarText)
-          isAddressFocused = false
-        }
-        .onChange(of: isAddressFocused) { _, focused in
-          isEditingAddress = focused
-        }
+        // URL text (Domain only)
+        Text(viewModel.activeTab?.url.host ?? "Search or enter URL")
+          .font(.system(size: 12))
+          .foregroundColor(.primary)
+          .lineLimit(1)
+          .truncationMode(.tail)
+
+        Spacer()
+      }
+      .padding(.horizontal, 10)
+      .padding(.vertical, 6)
+      .background(Color(nsColor: .textBackgroundColor))
+      .clipShape(RoundedRectangle(cornerRadius: 6))
+      .overlay(
+        RoundedRectangle(cornerRadius: 6)
+          .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+      )
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
-    .background(Color(nsColor: .textBackgroundColor))
-    .clipShape(RoundedRectangle(cornerRadius: 6))
-    .overlay(
-      RoundedRectangle(cornerRadius: 6)
-        .stroke(
-          isEditingAddress ? Color.accentColor : Color(nsColor: .separatorColor).opacity(0.3),
-          lineWidth: 1)
-    )
+    .buttonStyle(.plain)
   }
 
   // MARK: - Bottom Actions
