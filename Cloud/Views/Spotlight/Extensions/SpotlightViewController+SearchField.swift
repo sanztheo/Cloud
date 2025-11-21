@@ -73,15 +73,28 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     let query = searchField.stringValue
 
-    // Check if query looks like a URL (contains dot and no spaces)
-    if query.contains(".") && !query.contains(" ") {
-      viewModel.navigateToAddress(query)
-      close()
-      return
-    }
+    // Always create a new tab when opening from Spotlight (Arc-style)
+    if searchResults.isEmpty || (query.contains(".") && !query.contains(" ")) {
+      // Create synthetic result to ensure new tab creation
+      var urlString = query
+      if !urlString.contains("://") {
+        if urlString.contains(".") && !urlString.contains(" ") {
+          urlString = "https://\(urlString)"
+        } else {
+          urlString =
+            "https://www.google.com/search?q=\(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)"
+        }
+      }
 
-    if searchResults.isEmpty {
-      viewModel.navigateToAddress(query)
+      if let url = URL(string: urlString) {
+        let syntheticResult = SearchResult(
+          type: .website,
+          title: query,
+          subtitle: "Open website",
+          url: url
+        )
+        viewModel.selectSearchResult(syntheticResult)
+      }
       close()
     } else {
       let selectedRow = tableView.selectedRow

@@ -480,15 +480,19 @@ class BrowserViewModel: ObservableObject {
   func selectSearchResult(_ result: SearchResult) {
     isSpotlightVisible = false
 
+    print("🔍 Spotlight: selectSearchResult called with type: \(result.type), title: \(result.title)")
+
     switch result.type {
     case .tab:
       // Switch to existing tab instead of creating new one
       if let tabId = result.tabId {
+        print("  → Switching to existing tab")
         selectTab(tabId)
       }
     case .bookmark, .history, .suggestion, .website:
       // Create NEW tab for bookmarks, history, suggestions, and websites (Arc-style behavior)
       if let url = result.url {
+        print("  → Creating new tab for URL: \(url)")
         createNewTab(url: url)
       }
     }
