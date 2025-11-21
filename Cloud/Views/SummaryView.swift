@@ -263,49 +263,12 @@ struct SummaryView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .background(
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.05),
-                                    Color.clear
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                )
-        )
     }
 
     // MARK: - Background
 
     private var backgroundView: some View {
-        ZStack {
-            // Dark gradient background
-            LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.05, blue: 0.08),
-                    Color(red: 0.02, green: 0.02, blue: 0.03)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            // Subtle pattern overlay
-            GeometryReader { geometry in
-                Image(systemName: "circle.hexagongrid.fill")
-                    .font(.system(size: 200))
-                    .foregroundColor(.white.opacity(0.01))
-                    .rotationEffect(.degrees(15))
-                    .offset(x: geometry.size.width * 0.8, y: -50)
-            }
-        }
+        Color.clear
     }
 }
 
