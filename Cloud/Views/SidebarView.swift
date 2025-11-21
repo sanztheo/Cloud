@@ -370,10 +370,11 @@ struct SidebarView: View {
         Image(systemName: "chevron.left")
           .font(.system(size: 14, weight: .medium))
           .foregroundColor(
-            viewModel.activeTab?.canGoBack == true ? .primary : .secondary.opacity(0.5)
+            viewModel.activeTab?.canGoBack == true
+              ? AppColors.navigationButtonActive : AppColors.navigationButtonDisabled
           )
           .frame(width: 32, height: 32)
-          .background(Color(nsColor: .controlBackgroundColor))
+          .background(AppColors.navigationButtonBackground)
           .clipShape(Circle())
       }
       .buttonStyle(.plain)
@@ -385,10 +386,11 @@ struct SidebarView: View {
         Image(systemName: "chevron.right")
           .font(.system(size: 14, weight: .medium))
           .foregroundColor(
-            viewModel.activeTab?.canGoForward == true ? .primary : .secondary.opacity(0.5)
+            viewModel.activeTab?.canGoForward == true
+              ? AppColors.navigationButtonActive : AppColors.navigationButtonDisabled
           )
           .frame(width: 32, height: 32)
-          .background(Color(nsColor: .controlBackgroundColor))
+          .background(AppColors.navigationButtonBackground)
           .clipShape(Circle())
       }
       .buttonStyle(.plain)
@@ -401,9 +403,9 @@ struct SidebarView: View {
       Button(action: { viewModel.reload() }) {
         Image(systemName: viewModel.activeTab?.isLoading == true ? "xmark" : "arrow.clockwise")
           .font(.system(size: 12, weight: .medium))
-          .foregroundColor(.primary)
+          .foregroundColor(AppColors.navigationButtonActive)
           .frame(width: 32, height: 32)
-          .background(Color(nsColor: .controlBackgroundColor))
+          .background(AppColors.navigationButtonBackground)
           .clipShape(Circle())
       }
       .buttonStyle(.plain)
@@ -425,7 +427,7 @@ struct SidebarView: View {
         // URL text (Domain only)
         Text(viewModel.activeTab?.url.host ?? "Search or enter URL")
           .font(.system(size: 12))
-          .foregroundColor(.primary)
+          .foregroundColor(AppColors.addressBarText)
           .lineLimit(1)
           .truncationMode(.tail)
 
@@ -433,11 +435,11 @@ struct SidebarView: View {
       }
       .padding(.horizontal, 10)
       .padding(.vertical, 6)
-      .background(Color(nsColor: .textBackgroundColor))
+      .background(AppColors.addressBarBackground)
       .clipShape(RoundedRectangle(cornerRadius: 6))
       .overlay(
         RoundedRectangle(cornerRadius: 6)
-          .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+          .stroke(AppColors.addressBarBorder, lineWidth: 1)
       )
     }
     .buttonStyle(.plain)

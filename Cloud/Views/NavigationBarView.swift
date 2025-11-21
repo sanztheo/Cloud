@@ -131,11 +131,11 @@ struct NavigationBarView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color(nsColor: .textBackgroundColor))
+        .background(AppColors.addressBarBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isEditing ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(isEditing ? AppColors.addressBarBorderFocused : AppColors.addressBarBorder, lineWidth: 1)
         )
     }
 
