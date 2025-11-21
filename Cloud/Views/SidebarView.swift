@@ -177,7 +177,10 @@ struct SidebarView: View {
           .clipShape(RoundedRectangle(cornerRadius: 10))
           .overlay(
             RoundedRectangle(cornerRadius: 10)
-              .stroke(viewModel.activeSpaceId == space.id ? space.color : Color.clear, lineWidth: 2)
+              .stroke(
+                viewModel.activeSpaceId == space.id ? Color.black.opacity(0.3) : Color.clear,
+                lineWidth: 2
+              )
           )
       }
     }
