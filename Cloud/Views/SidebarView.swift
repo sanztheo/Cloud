@@ -119,36 +119,7 @@ struct SidebarView: View {
     }
   }
 
-  // MARK: - Space Selector
-  private var spaceSelector: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 8) {
-        ForEach(viewModel.spaces) { space in
-          spaceButton(space)
-        }
-
-        // Add space button
-        Button(action: { isAddingSpace = true }) {
-          Image(systemName: "plus")
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.secondary)
-            .frame(width: 32, height: 32)
-            .background(Color(nsColor: .controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-        .sheet(isPresented: $isAddingSpace) {
-          SpaceCreationSheet(
-            isPresented: $isAddingSpace,
-            viewModel: viewModel
-          )
-        }
-      }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-    }
-  }
-
+  // MARK: - Space Button
   private func spaceButton(_ space: Space) -> some View {
     Button(action: { viewModel.selectSpace(space.id) }) {
       VStack(spacing: 4) {
