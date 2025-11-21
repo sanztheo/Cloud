@@ -230,14 +230,9 @@ struct SummaryView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
                 .background(
-                    LinearGradient(
-                        colors: [.teal, .blue],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+                    Color(hex: "72B4FF").opacity(0.75)
                 )
                 .clipShape(Capsule())
-                .shadow(color: .teal.opacity(0.3), radius: 8, x: 0, y: 4)
             }
             .buttonStyle(ScaleButtonStyle())
         }
