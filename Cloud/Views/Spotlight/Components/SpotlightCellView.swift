@@ -123,12 +123,28 @@ class SpotlightCellView: NSTableCellView {
 
     // Configure icon
     let iconColor: NSColor
-    if result.type == .website, let url = result.url, let host = url.host {
-      // Load favicon for website
+
+    // 1. Use provided favicon (e.g. from Tabs)
+    if let favicon = result.favicon {
       iconBackground.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.1).cgColor
+      iconImageView.image = favicon
+      iconImageView.contentTintColor = nil
+      iconColor = .labelColor
+    }
+    // 2. Or try to load from URL (for History, Bookmarks, Suggestions)
+    else if let url = result.url, let host = url.host {
+      // Set placeholder first (type-specific icon)
+      let (bgColor, iconName, color) = iconConfig(for: result.type)
+      iconBackground.layer?.backgroundColor = bgColor.cgColor
+      iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
+      iconImageView.contentTintColor = color
+      iconColor = color
+
+      // Load favicon asynchronously
       loadFavicon(for: host)
-      iconColor = .labelColor  // Default color for website icons
-    } else {
+    }
+    // 3. Fallback to system icons
+    else {
       let (bgColor, iconName, color) = iconConfig(for: result.type)
       iconBackground.layer?.backgroundColor = bgColor.cgColor
       iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
@@ -186,6 +202,7 @@ class SpotlightCellView: NSTableCellView {
       DispatchQueue.main.async {
         self.iconImageView.image = image
         self.iconImageView.contentTintColor = nil
+        self.iconBackground.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.1).cgColor
       }
     }.resume()
   }
