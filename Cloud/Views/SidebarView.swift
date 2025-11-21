@@ -17,6 +17,12 @@ struct SidebarView: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      // Window controls (Arc style)
+      windowControls
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+
       // Navigation controls (Arc style)
       navigationControls
         .padding(.horizontal, 12)
@@ -87,6 +93,37 @@ struct SidebarView: View {
       }
     )
     .clipped()
+  }
+
+  // MARK: - Window Controls (Arc Style)
+  private var windowControls: some View {
+    HStack(spacing: 8) {
+      // Close button
+      Circle()
+        .fill(Color.red)
+        .frame(width: 12, height: 12)
+        .onTapGesture {
+          NSApplication.shared.keyWindow?.close()
+        }
+
+      // Minimize button
+      Circle()
+        .fill(Color.yellow)
+        .frame(width: 12, height: 12)
+        .onTapGesture {
+          NSApplication.shared.keyWindow?.miniaturize(nil)
+        }
+
+      // Maximize button
+      Circle()
+        .fill(Color.green)
+        .frame(width: 12, height: 12)
+        .onTapGesture {
+          NSApplication.shared.keyWindow?.zoom(nil)
+        }
+
+      Spacer()
+    }
   }
 
   // MARK: - Space Selector

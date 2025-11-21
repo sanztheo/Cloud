@@ -87,9 +87,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Configure app appearance
         NSApp.appearance = NSAppearance(named: .darkAqua)
 
-        // Maximize window to fill screen (not fullscreen)
+        // Configure window with custom traffic lights (Arc style)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             if let window = NSApp.windows.first {
+                // Hide default traffic lights
+                window.standardWindowButton(.closeButton)?.isHidden = true
+                window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                window.standardWindowButton(.zoomButton)?.isHidden = true
+
+                // Make title bar transparent
+                window.titlebarAppearsTransparent = true
+                window.titleVisibility = .hidden
+
+                // Maximize window to fill screen (not fullscreen)
                 if let screen = window.screen ?? NSScreen.main {
                     let visibleFrame = screen.visibleFrame
                     window.setFrame(visibleFrame, display: true, animate: false)

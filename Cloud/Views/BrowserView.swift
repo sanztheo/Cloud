@@ -46,6 +46,7 @@ struct BrowserView: View {
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSidebarCollapsed)
     .frame(minWidth: 800, minHeight: 600)
     .background(Color(hex: "72B4FF"))
+    .ignoresSafeArea(.all, edges: .top)
     .onAppear {
       setupKeyboardShortcuts()
     }
