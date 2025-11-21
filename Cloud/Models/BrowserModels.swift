@@ -48,12 +48,18 @@ struct BrowserTab: Identifiable, Equatable {
 }
 
 // MARK: - Space Model
-struct Space: Identifiable, Equatable {
+struct Space: Identifiable, Equatable, Codable {
   let id: UUID
   var name: String
   var icon: String
-  var color: Color
+  var colorHex: String  // Store as hex string for Codable
   var theme: SpaceTheme?
+
+  // Computed property for Color
+  var color: Color {
+    get { Color(hex: colorHex) }
+    set { colorHex = newValue.toHex() ?? "#0066FF" }
+  }
 
   init(
     id: UUID = UUID(),
@@ -65,8 +71,13 @@ struct Space: Identifiable, Equatable {
     self.id = id
     self.name = name
     self.icon = icon
-    self.color = color
+    self.colorHex = color.toHex() ?? "#0066FF"
     self.theme = theme
+  }
+
+  // Custom coding keys to exclude computed property
+  enum CodingKeys: String, CodingKey {
+    case id, name, icon, colorHex, theme
   }
 }
 

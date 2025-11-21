@@ -19,8 +19,6 @@ struct ColorPickerGrid: View {
     switch mode {
     case .light:
       return 0.95 // Très lumineux
-    case .auto:
-      return 0.85 // Normal
     case .dark:
       return 0.65 // Plus sombre
     }
@@ -116,7 +114,7 @@ struct DotGridPattern: View {
 
 struct ColorPickerGrid_Previews: PreviewProvider {
   static var previews: some View {
-    ColorPickerGrid(hue: .constant(0.5), saturation: .constant(0.7), mode: .auto)
+    ColorPickerGrid(hue: .constant(0.5), saturation: .constant(0.7), mode: .light)
       .padding()
       .background(Color.black)
   }

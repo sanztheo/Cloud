@@ -12,7 +12,7 @@ struct SummaryView: View {
   // Computed property pour la couleur du texte basée sur le mode du space/profil
   private var textColor: Color {
     guard let theme = viewModel.activeSpace?.theme else {
-      return .white // Fallback si pas de theme
+      return .black // Fallback si pas de theme (mode light par défaut)
     }
 
     switch theme.mode {
@@ -20,19 +20,7 @@ struct SummaryView: View {
       return .black
     case .dark:
       return .white
-    case .auto:
-      // En mode auto, suivre le système
-      let isDark = NSApp.effectiveAppearance.name == .darkAqua
-      return isDark ? .white : .black
     }
-  }
-
-  // Détection du mode pour debug
-  private var debugMode: String {
-    guard let theme = viewModel.activeSpace?.theme else {
-      return "No theme"
-    }
-    return "\(theme.mode.label)"
   }
 
   var body: some View {
@@ -73,14 +61,9 @@ struct SummaryView: View {
         Text("Page Summary")
           .font(.title2)
           .fontWeight(.semibold)
-          .foregroundColor(.primary)
+          .foregroundStyle(textColor)
 
         Spacer()
-
-        // DEBUG: Afficher le mode du profil
-        Text("Mode: \(debugMode)")
-          .font(.caption)
-          .foregroundColor(.red)
       }
       .padding(.bottom, 8)
 
@@ -104,62 +87,63 @@ struct SummaryView: View {
   // MARK: - Loading View
 
   private var loadingView: some View {
-    VStack(spacing: 24) {
-      // Animated loading indicator
-      ZStack {
-        Circle()
-          .stroke(
-            LinearGradient(
-              colors: [.teal, .blue],
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            ),
-            lineWidth: 3
-          )
-          .frame(width: 60, height: 60)
-          .rotationEffect(.degrees(360))
-          .animation(
-            Animation.linear(duration: 2)
-              .repeatForever(autoreverses: false),
-            value: true
-          )
+    VStack(alignment: .leading, spacing: 16) {
+      // Centered loading indicator at top
+      HStack {
+        Spacer()
+        VStack(spacing: 16) {
+          // Animated loading indicator
+          ZStack {
+            Circle()
+              .stroke(
+                LinearGradient(
+                  colors: [.teal, .blue],
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                ),
+                lineWidth: 3
+              )
+              .frame(width: 60, height: 60)
+              .rotationEffect(.degrees(360))
+              .animation(
+                Animation.linear(duration: 2)
+                  .repeatForever(autoreverses: false),
+                value: true
+              )
 
-        Image(systemName: "brain")
-          .font(.title)
-          .foregroundColor(.teal)
-          .symbolEffect(.pulse)
-      }
+            Image(systemName: "brain")
+              .font(.title)
+              .foregroundColor(.teal)
+              .symbolEffect(.pulse)
+          }
 
-      VStack(spacing: 8) {
-        Text("Analyzing Page")
-          .font(.title3)
-          .fontWeight(.semibold)
-          .foregroundColor(.primary)
+          VStack(spacing: 8) {
+            Text("Analyzing Page")
+              .font(.title3)
+              .fontWeight(.semibold)
+              .foregroundStyle(textColor)
 
-        if !viewModel.summarizingStatus.isEmpty {
-          Text(viewModel.summarizingStatus)
-            .font(.callout)
-            .foregroundColor(.secondary)
-            .multilineTextAlignment(.center)
-            .animation(.easeInOut, value: viewModel.summarizingStatus)
+            if !viewModel.summarizingStatus.isEmpty {
+              Text(viewModel.summarizingStatus)
+                .font(.callout)
+                .foregroundStyle(textColor.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .animation(.easeInOut, value: viewModel.summarizingStatus)
+            }
+          }
         }
+        Spacer()
       }
+      .padding(.bottom, !viewModel.summaryText.isEmpty ? 16 : 0)
 
-      // Partial summary if available
+      // Partial summary if available - same layout as completed summary
       if !viewModel.summaryText.isEmpty {
-        VStack(alignment: .leading, spacing: 12) {
-          Divider()
-            .opacity(0.2)
-
-          markdownText
-            .opacity(0.7)
-            .padding(.horizontal)
-        }
-        .padding(.top)
+        markdownText
+          .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .padding(32)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    .padding(24)
   }
 
   // MARK: - Error View
@@ -175,11 +159,11 @@ struct SummaryView: View {
         Text("Summary Generation Failed")
           .font(.title3)
           .fontWeight(.semibold)
-          .foregroundColor(.primary)
+          .foregroundStyle(textColor)
 
         Text(error)
           .font(.callout)
-          .foregroundColor(.secondary)
+          .foregroundStyle(textColor.opacity(0.7))
           .multilineTextAlignment(.center)
           .padding(.horizontal)
       }
@@ -223,7 +207,7 @@ struct SummaryView: View {
 
         Text("Summary Complete")
           .font(.callout)
-          .foregroundColor(.secondary)
+          .foregroundStyle(textColor.opacity(0.7))
       }
 
       Spacer()

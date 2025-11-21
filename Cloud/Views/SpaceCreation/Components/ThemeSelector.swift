@@ -36,13 +36,6 @@ struct ThemeSelector: View {
       )
 
       ThemeModeButton(
-        icon: SpaceTheme.Mode.auto.icon,
-        label: SpaceTheme.Mode.auto.label,
-        isSelected: theme.mode == .auto,
-        action: { theme.mode = .auto }
-      )
-
-      ThemeModeButton(
         icon: SpaceTheme.Mode.dark.icon,
         label: SpaceTheme.Mode.dark.label,
         isSelected: theme.mode == .dark,

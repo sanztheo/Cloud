@@ -34,6 +34,20 @@ extension Color {
     )
   }
 
+  /// Convert Color to hex string
+  /// - Returns: Hex string representation (e.g., "#0066FF")
+  func toHex() -> String? {
+    guard let nsColor = NSColor(self).usingColorSpace(.sRGB) else {
+      return nil
+    }
+
+    let red = Int(nsColor.redComponent * 255.0)
+    let green = Int(nsColor.greenComponent * 255.0)
+    let blue = Int(nsColor.blueComponent * 255.0)
+
+    return String(format: "#%02X%02X%02X", red, green, blue)
+  }
+
   /// Adjust the brightness of a color
   /// - Parameter amount: The amount to adjust (-1.0 to 1.0). Negative values darken, positive values brighten.
   /// - Returns: A new Color with adjusted brightness

@@ -93,16 +93,22 @@ class BrowserViewModel: ObservableObject {
   }
 
   private func setupInitialData() {
-    // Create default space
-    let personalSpace = Space(name: "Personal", icon: "👤", color: .blue)
-    spaces = [personalSpace]
-    activeSpaceId = personalSpace.id
+    // Load spaces from UserDefaults if available
+    loadSpaces()
+
+    // If no spaces exist, create default space
+    if spaces.isEmpty {
+      let personalSpace = Space(name: "Personal", icon: "👤", color: .blue)
+      spaces = [personalSpace]
+      activeSpaceId = personalSpace.id
+      saveSpaces()
+    }
 
     // Create initial tab
     let initialTab = BrowserTab(
       url: URL(string: "https://www.google.com")!,
       title: "Google",
-      spaceId: personalSpace.id
+      spaceId: spaces.first!.id
     )
     tabs = [initialTab]
     activeTabId = initialTab.id
@@ -324,6 +330,7 @@ class BrowserViewModel: ObservableObject {
   func createNewSpace(name: String, icon: String, color: Color, theme: SpaceTheme? = nil) {
     let newSpace = Space(name: name, icon: icon, color: color, theme: theme)
     spaces.append(newSpace)
+    saveSpaces()
   }
 
   func updateSpace(id: UUID, name: String, icon: String, color: Color, theme: SpaceTheme?) {
@@ -332,6 +339,7 @@ class BrowserViewModel: ObservableObject {
       spaces[index].icon = icon
       spaces[index].color = color
       spaces[index].theme = theme
+      saveSpaces()
     }
   }
 
@@ -687,6 +695,7 @@ class BrowserViewModel: ObservableObject {
 
   // MARK: - Persistence
   private func loadPersistedData() {
+    loadSpaces()
     loadBookmarks()
     loadHistory()
   }
@@ -716,6 +725,26 @@ class BrowserViewModel: ObservableObject {
       let decoded = try? JSONDecoder().decode([HistoryEntry].self, from: data)
     {
       history = decoded
+    }
+  }
+
+  // MARK: - Spaces Persistence
+
+  private func saveSpaces() {
+    if let encoded = try? JSONEncoder().encode(spaces) {
+      UserDefaults.standard.set(encoded, forKey: "cloud_spaces")
+    }
+  }
+
+  private func loadSpaces() {
+    if let data = UserDefaults.standard.data(forKey: "cloud_spaces"),
+      let decoded = try? JSONDecoder().decode([Space].self, from: data)
+    {
+      spaces = decoded
+      // Set active space to first one if not set
+      if activeSpaceId == nil, let firstSpace = spaces.first {
+        activeSpaceId = firstSpace.id
+      }
     }
   }
 }

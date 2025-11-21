@@ -11,13 +11,11 @@ struct SpaceTheme: Equatable, Codable {
   // MARK: - Mode d'affichage
   enum Mode: String, CaseIterable, Codable {
     case light    // Mode clair (sparkle)
-    case auto     // Mode automatique (sun)
     case dark     // Mode sombre (moon)
 
     var icon: String {
       switch self {
       case .light: return "sparkles"
-      case .auto: return "sun.max.fill"
       case .dark: return "moon.fill"
       }
     }
@@ -25,14 +23,13 @@ struct SpaceTheme: Equatable, Codable {
     var label: String {
       switch self {
       case .light: return "Light"
-      case .auto: return "Auto"
       case .dark: return "Dark"
       }
     }
   }
 
   // MARK: - Propriétés
-  var mode: Mode = .auto
+  var mode: Mode = .light
   var baseColorHex: String = "0066FF" // Couleur de base en hex (legacy)
   var hue: Double = 0.583 // 0-1 (210° / 360 = 0.583)
   var saturation: Double = 0.7 // 0-1
@@ -45,8 +42,6 @@ struct SpaceTheme: Equatable, Codable {
     switch mode {
     case .light:
       return 0.95 // Très lumineux
-    case .auto:
-      return 0.85 // Normal
     case .dark:
       return 0.65 // Plus sombre
     }
@@ -76,8 +71,6 @@ struct SpaceTheme: Equatable, Codable {
     switch mode {
     case .light:
       return Color(hue: hue, saturation: saturation * 0.4, brightness: 0.95)
-    case .auto:
-      return Color(hue: hue, saturation: saturation * 0.7, brightness: 0.85)
     case .dark:
       return Color(hue: hue, saturation: saturation * 0.9, brightness: 0.65)
     }
