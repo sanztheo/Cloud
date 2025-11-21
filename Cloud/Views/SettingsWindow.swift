@@ -11,6 +11,7 @@ struct SettingsWindow: View {
     // MARK: - Properties
 
     @AppStorage("openai_api_key") private var apiKey: String = ""
+    @AppStorage("summary_language") private var summaryLanguage: String = "English"
     @State private var tempApiKey: String = ""
     @State private var showKey: Bool = false
     @State private var saveMessage: String = ""
@@ -99,6 +100,26 @@ struct SettingsWindow: View {
                 Text("Configure your OpenAI API key for AI-powered features")
                     .font(.callout)
                     .foregroundColor(.secondary)
+
+                // Language Selector
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Summary Language")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    Picker("Language", selection: $summaryLanguage) {
+                        Text("🇬🇧 English").tag("English")
+                        Text("🇫🇷 Français").tag("French")
+                        Text("🇪🇸 Español").tag("Spanish")
+                        Text("🇩🇪 Deutsch").tag("German")
+                        Text("🇮🇹 Italiano").tag("Italian")
+                        Text("🇯🇵 日本語").tag("Japanese")
+                        Text("🇨🇳 中文").tag("Chinese")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 200)
+                }
+                .padding(.vertical, 8)
 
                 // API Key Field
                 HStack(spacing: 12) {

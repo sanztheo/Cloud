@@ -161,6 +161,14 @@ class OpenAIService {
       processedText = text
     }
 
+    // Get selected language from UserDefaults
+    let selectedLanguage = UserDefaults.standard.string(forKey: "summary_language") ?? "English"
+
+    // Build language instruction
+    let languageInstruction = selectedLanguage == "English"
+      ? ""
+      : " Provide the summary in \(selectedLanguage)."
+
     // Build request body
     let requestBody: [String: Any] = [
       "model": model,
@@ -168,7 +176,7 @@ class OpenAIService {
         [
           "role": "system",
           "content":
-            "You are a helpful assistant that summarizes web page content concisely. Focus on the key points and main ideas.",
+            "You are a helpful assistant that summarizes web page content concisely. Focus on the key points and main ideas.\(languageInstruction)",
         ],
         [
           "role": "user",

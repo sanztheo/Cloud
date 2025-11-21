@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SummaryView: View {
     @ObservedObject var viewModel: BrowserViewModel
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,7 +27,6 @@ struct SummaryView: View {
             }
         }
         .background(backgroundView)
-        .preferredColorScheme(.dark)
     }
 
     // MARK: - Summary Content
@@ -66,14 +66,14 @@ struct SummaryView: View {
             ) {
                 Text(attributedString)
                     .font(.system(.body, design: .default))
-                    .foregroundColor(.primary.opacity(0.95))
+                    .foregroundColor(colorScheme == .dark ? .white : .black)
                     .lineSpacing(4)
                     .textSelection(.enabled)
             } else {
                 // Fallback to plain text if markdown parsing fails
                 Text(viewModel.summaryText)
                     .font(.system(.body, design: .default))
-                    .foregroundColor(.primary.opacity(0.95))
+                    .foregroundColor(colorScheme == .dark ? .white : .black)
                     .lineSpacing(4)
                     .textSelection(.enabled)
             }
