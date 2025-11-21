@@ -56,7 +56,7 @@ struct SummaryView: View {
       HStack {
         Image(systemName: "doc.text.magnifyingglass")
           .font(.title2)
-          .foregroundColor(.teal)
+          .foregroundStyle(textColor)
 
         Text("Page Summary")
           .font(.title2)
