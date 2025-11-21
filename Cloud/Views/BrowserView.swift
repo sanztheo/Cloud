@@ -20,16 +20,8 @@ struct BrowserView: View {
                         .transition(.move(edge: .leading))
                 }
 
-                // Main browser area
-                VStack(spacing: 0) {
-                    // Navigation bar
-                    NavigationBarView(viewModel: viewModel)
-
-                    Divider()
-
-                    // Web content
-                    webContent
-                }
+                // Main browser area - Arc style (no top bar)
+                webContent
             }
 
             // Spotlight overlay

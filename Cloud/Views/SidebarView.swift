@@ -12,9 +12,27 @@ struct SidebarView: View {
     @State private var hoveredTabId: UUID?
     @State private var isAddingSpace: Bool = false
     @State private var newSpaceName: String = ""
+    @State private var isEditingAddress: Bool = false
+    @FocusState private var isAddressFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
+            // Navigation controls (Arc style)
+            navigationControls
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+
+            Divider()
+                .padding(.horizontal, 12)
+
+            // Address bar (Arc style)
+            addressBar
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+
+            Divider()
+                .padding(.horizontal, 12)
+
             // Space selector
             spaceSelector
 
@@ -273,6 +291,84 @@ struct SidebarView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Navigation Controls (Arc Style)
+    private var navigationControls: some View {
+        HStack(spacing: 8) {
+            // Back
+            Button(action: { viewModel.goBack() }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(viewModel.activeTab?.canGoBack == true ? .primary : .secondary.opacity(0.5))
+                    .frame(width: 32, height: 32)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.activeTab?.canGoBack != true)
+            .help("Go Back")
+
+            // Forward
+            Button(action: { viewModel.goForward() }) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(viewModel.activeTab?.canGoForward == true ? .primary : .secondary.opacity(0.5))
+                    .frame(width: 32, height: 32)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.activeTab?.canGoForward != true)
+            .help("Go Forward")
+
+            Spacer()
+
+            // Reload
+            Button(action: { viewModel.reload() }) {
+                Image(systemName: viewModel.activeTab?.isLoading == true ? "xmark" : "arrow.clockwise")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(width: 32, height: 32)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .help(viewModel.activeTab?.isLoading == true ? "Stop" : "Reload")
+        }
+    }
+
+    // MARK: - Address Bar (Arc Style)
+    private var addressBar: some View {
+        HStack(spacing: 8) {
+            // Security indicator
+            if let url = viewModel.activeTab?.url {
+                Image(systemName: url.scheme == "https" ? "lock.fill" : "globe")
+                    .font(.system(size: 10))
+                    .foregroundColor(url.scheme == "https" ? .green : .secondary)
+            }
+
+            // URL field
+            TextField("Search or enter URL", text: $viewModel.addressBarText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .focused($isAddressFocused)
+                .onSubmit {
+                    viewModel.navigateToAddress(viewModel.addressBarText)
+                    isAddressFocused = false
+                }
+                .onChange(of: isAddressFocused) { _, focused in
+                    isEditingAddress = focused
+                }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color(nsColor: .textBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(isEditingAddress ? Color.accentColor : Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+        )
     }
 
     // MARK: - Bottom Actions
