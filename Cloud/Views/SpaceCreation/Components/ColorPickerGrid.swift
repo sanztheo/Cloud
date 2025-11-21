@@ -29,53 +29,23 @@ struct ColorPickerGrid: View {
   var body: some View {
     GeometryReader { geometry in
       ZStack {
-        // Gradient de couleurs harmonieuses (spectre complet)
-        LinearGradient(
-          gradient: Gradient(stops: [
-            .init(color: Color(hue: 0.0, saturation: 1.0, brightness: brightness), location: 0.0),      // Rouge
-            .init(color: Color(hue: 0.083, saturation: 1.0, brightness: brightness), location: 0.083),  // Orange
-            .init(color: Color(hue: 0.167, saturation: 1.0, brightness: brightness), location: 0.167),  // Jaune
-            .init(color: Color(hue: 0.25, saturation: 1.0, brightness: brightness), location: 0.25),    // Jaune-Vert
-            .init(color: Color(hue: 0.333, saturation: 1.0, brightness: brightness), location: 0.333),  // Vert
-            .init(color: Color(hue: 0.417, saturation: 1.0, brightness: brightness), location: 0.417),  // Cyan-Vert
-            .init(color: Color(hue: 0.5, saturation: 1.0, brightness: brightness), location: 0.5),      // Cyan
-            .init(color: Color(hue: 0.583, saturation: 1.0, brightness: brightness), location: 0.583),  // Bleu clair
-            .init(color: Color(hue: 0.667, saturation: 1.0, brightness: brightness), location: 0.667),  // Bleu
-            .init(color: Color(hue: 0.75, saturation: 1.0, brightness: brightness), location: 0.75),    // Violet
-            .init(color: Color(hue: 0.833, saturation: 1.0, brightness: brightness), location: 0.833),  // Magenta
-            .init(color: Color(hue: 0.917, saturation: 1.0, brightness: brightness), location: 0.917),  // Rose
-            .init(color: Color(hue: 1.0, saturation: 1.0, brightness: brightness), location: 1.0)       // Rouge
-          ]),
-          startPoint: .leading,
-          endPoint: .trailing
-        )
-        .overlay(
-          // Gradient vertical (saturé en haut, désaturé en bas)
-          LinearGradient(
-            gradient: Gradient(colors: [
-              Color.clear,
-              Color.white
-            ]),
-            startPoint: .top,
-            endPoint: .bottom
+        // Fond uni avec grille de points seulement
+        Color.white.opacity(0.05)
+          .overlay(
+            DotGridPattern()
+              .opacity(0.3)
           )
-        )
-        .overlay(
-          // Grille de points comme Arc
-          DotGridPattern()
-            .opacity(0.15)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+          .clipShape(RoundedRectangle(cornerRadius: 16))
 
-        // Cercle de sélection
+        // Cercle de sélection avec la couleur choisie
         Circle()
-          .fill(Color.white)
-          .frame(width: 28, height: 28)
+          .fill(Color(hue: hue, saturation: saturation, brightness: 0.9))
+          .frame(width: 32, height: 32)
           .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 2)
           .overlay(
             Circle()
               .stroke(Color.white, lineWidth: 3)
-              .frame(width: 36, height: 36)
+              .frame(width: 40, height: 40)
           )
           .position(dragPosition)
       }
@@ -88,10 +58,10 @@ struct ColorPickerGrid: View {
       .onAppear {
         updateDragPosition(size: geometry.size)
       }
-      .onChange(of: hue) { _ in
+      .onChange(of: hue) {
         updateDragPosition(size: geometry.size)
       }
-      .onChange(of: saturation) { _ in
+      .onChange(of: saturation) {
         updateDragPosition(size: geometry.size)
       }
     }
@@ -114,14 +84,16 @@ struct ColorPickerGrid: View {
 
     dragPosition = CGPoint(x: x, y: y)
 
-    // Calculer hue (0-1) basé sur X
+    // Calculer hue (0-1) basé sur X - spectre complet
     hue = Double(x / size.width)
 
-    // Calculer saturation (0-1) basé sur Y (inversé)
+    // Calculer saturation (0-1) basé sur Y
+    // Y=0 (haut) = saturation élevée
+    // Y=max (bas) = saturation faible
     saturation = Double(1 - (y / size.height))
 
-    // Assurer que la saturation reste dans une plage harmonieuse
-    saturation = max(0.3, min(saturation, 1.0))
+    // Garder une plage large de saturation
+    saturation = max(0.2, min(saturation, 1.0))
   }
 }
 
