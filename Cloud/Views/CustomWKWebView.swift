@@ -8,9 +8,9 @@
 import WebKit
 
 class CustomWKWebView: WKWebView {
-  // Disable rubber banding by preventing scroll wheel events
+  // Handle scroll normally - let WKWebView manage its own scrolling
   override func scrollWheel(with event: NSEvent) {
-    // Don't pass scroll events when at bounds to prevent rubber banding
-    nextResponder?.scrollWheel(with: event)
+    // Let the WebView handle scrolling normally
+    super.scrollWheel(with: event)
   }
 }

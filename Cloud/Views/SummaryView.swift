@@ -202,7 +202,7 @@ struct SummaryView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
         .background(buttonColor)
-        .clipShape(Capsule())
+        .clipShape(RoundedRectangle(cornerRadius: 8))
       }
       .buttonStyle(ScaleButtonStyle())
     }

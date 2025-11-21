@@ -46,6 +46,7 @@ class BrowserViewModel: ObservableObject {
 
   // Task for summary generation (to support cancellation)
   private var summaryTask: Task<Void, Never>?
+  private var isSummaryCancelled: Bool = false
 
   // MARK: - Optimized Configuration (2025 Best Practices)
   // User-Agent STABLE - pas de rotation (red flag pour les systèmes anti-bot)
@@ -603,8 +604,8 @@ class BrowserViewModel: ObservableObject {
       return
     }
 
-    // Cancel any existing summary task
-    summaryTask?.cancel()
+    // Reset cancellation flag
+    isSummaryCancelled = false
 
     // Reset state
     isSummarizing = true
@@ -615,10 +616,12 @@ class BrowserViewModel: ObservableObject {
 
     do {
       // Check for cancellation
-      try Task.checkCancellation()
+      guard !isSummaryCancelled else { return }
 
       // Extract page content using JavaScript
       let pageContent = try await webView.evaluateJavaScript("document.body.innerText") as? String ?? ""
+
+      guard !isSummaryCancelled else { return }
 
       guard !pageContent.isEmpty else {
         throw NSError(domain: "BrowserViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "Page has no text content"])
@@ -631,13 +634,14 @@ class BrowserViewModel: ObservableObject {
         .joined(separator: " ")
 
       // Check for cancellation
-      try Task.checkCancellation()
+      guard !isSummaryCancelled else { return }
 
       // Generate content hash for caching
       let contentHash = await cacheService.generateContentHash(cleanedContent)
 
       // Check cache first
       if let cachedSummary = await cacheService.getCachedSummary(for: activeTab.url, contentHash: contentHash) {
+        guard !isSummaryCancelled else { return }
         summarizingStatus = "Loading cached summary..."
         summaryText = cachedSummary
         isSummaryComplete = true
@@ -650,33 +654,35 @@ class BrowserViewModel: ObservableObject {
 
       // Process streaming response with cancellation checks
       for try await chunk in stream {
-        try Task.checkCancellation()
+        guard !isSummaryCancelled else { return }
         summaryText += chunk
       }
 
       // Check for cancellation before caching
-      try Task.checkCancellation()
+      guard !isSummaryCancelled else { return }
 
       // Cache the generated summary
       await cacheService.cacheSummary(summaryText, for: activeTab.url, contentHash: contentHash)
 
       isSummaryComplete = true
 
-    } catch is CancellationError {
-      // Task was cancelled, do nothing (restorePage will handle cleanup)
-      return
     } catch let error as OpenAIError {
-      summaryError = error.localizedDescription
-      isSummarizing = false
+      if !isSummaryCancelled {
+        summaryError = error.localizedDescription
+        isSummarizing = false
+      }
     } catch {
-      summaryError = "Failed to generate summary: \(error.localizedDescription)"
-      isSummarizing = false
+      if !isSummaryCancelled {
+        summaryError = "Failed to generate summary: \(error.localizedDescription)"
+        isSummarizing = false
+      }
     }
   }
 
   @MainActor
   func restorePage() {
-    // Cancel any ongoing summary generation
+    // Set cancellation flag to stop any ongoing summary generation
+    isSummaryCancelled = true
     summaryTask?.cancel()
     summaryTask = nil
 

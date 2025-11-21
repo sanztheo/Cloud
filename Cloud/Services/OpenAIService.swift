@@ -37,7 +37,7 @@ class OpenAIService {
   private let endpoint = "https://api.openai.com/v1/chat/completions"
   private let model = "gpt-5-nano"
   private let maxInputLength = 100_000
-  private let maxCompletionTokens = 4000
+  private let maxCompletionTokens = 1000
   private let reasoningEffort = "low"  // "low" | "medium" | "high"
   private let apiKeyUserDefaultsKey = "openai_api_key"
 
@@ -165,7 +165,8 @@ class OpenAIService {
     let selectedLanguage = UserDefaults.standard.string(forKey: "summary_language") ?? "English"
 
     // Build language instruction
-    let languageInstruction = selectedLanguage == "English"
+    let languageInstruction =
+      selectedLanguage == "English"
       ? ""
       : " Provide the summary in \(selectedLanguage)."
 

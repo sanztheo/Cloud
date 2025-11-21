@@ -87,28 +87,18 @@ struct BrowserView: View {
         // Summary Mode: Shrink WebView and show summary below with global scroll
         ScrollView(.vertical, showsIndicators: true) {
           VStack(spacing: 24) {
-            // Shrunk WebView (centered, 600x400) with floating animation
+            // Shrunk WebView (centered, 600x400) with floating animation during generation
             WebViewRepresentable(tabId: tabId, viewModel: viewModel)
               .frame(width: 600, height: 400)
               .clipShape(RoundedRectangle(cornerRadius: 12))
               .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
-              .rotation3DEffect(
-                .degrees(viewModel.isSummaryComplete ? 0 : floatingRotation),
-                axis: (x: 0, y: 1, z: 0)
-              )
+              .rotationEffect(.degrees(floatingRotation))
               .onAppear {
-                if !viewModel.isSummaryComplete {
-                  withAnimation(
-                    Animation.easeInOut(duration: 3)
-                      .repeatForever(autoreverses: true)
-                  ) {
-                    floatingRotation = 8
-                  }
-                }
+                startFloatingAnimation()
               }
               .onChange(of: viewModel.isSummaryComplete) { _, isComplete in
                 if isComplete {
-                  withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                  withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     floatingRotation = 0
                   }
                 }
@@ -150,6 +140,21 @@ struct BrowserView: View {
         .foregroundColor(.secondary.opacity(0.7))
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  // MARK: - Floating Animation
+  private func startFloatingAnimation() {
+    guard !viewModel.isSummaryComplete else {
+      floatingRotation = 0
+      return
+    }
+    floatingRotation = -1
+    withAnimation(
+      Animation.easeInOut(duration: 2)
+        .repeatForever(autoreverses: true)
+    ) {
+      floatingRotation = 1
+    }
   }
 
   // MARK: - Keyboard Shortcuts
