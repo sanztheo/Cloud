@@ -21,24 +21,47 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       close()
       return true
     } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
-      // Down arrow - move to table view
+      // Down arrow - navigate table while keeping focus in search field (Arc-style)
       if !searchResults.isEmpty {
-        view.window?.makeFirstResponder(tableView)
-        if tableView.selectedRow < 0 {
-          tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+        let currentRow = tableView.selectedRow
+        let nextRow: Int
+
+        if currentRow < 0 {
+          // No selection yet, select first row
+          nextRow = 0
+        } else if currentRow < searchResults.count - 1 {
+          // Move to next row
+          nextRow = currentRow + 1
+        } else {
+          // Already at last row, stay there
+          nextRow = currentRow
         }
-        tableView.scrollRowToVisible(tableView.selectedRow)
+
+        tableView.selectRowIndexes(IndexSet(integer: nextRow), byExtendingSelection: false)
+        tableView.scrollRowToVisible(nextRow)
+        // Focus stays in searchField automatically
       }
       return true
     } else if commandSelector == #selector(NSResponder.moveUp(_:)) {
-      // Up arrow - move to table view (select last item)
+      // Up arrow - navigate table while keeping focus in search field (Arc-style)
       if !searchResults.isEmpty {
-        view.window?.makeFirstResponder(tableView)
-        let lastRow = searchResults.count - 1
-        if tableView.selectedRow < 0 {
-          tableView.selectRowIndexes(IndexSet(integer: lastRow), byExtendingSelection: false)
+        let currentRow = tableView.selectedRow
+        let previousRow: Int
+
+        if currentRow < 0 {
+          // No selection yet, select last row
+          previousRow = searchResults.count - 1
+        } else if currentRow > 0 {
+          // Move to previous row
+          previousRow = currentRow - 1
+        } else {
+          // Already at first row, stay there
+          previousRow = currentRow
         }
-        tableView.scrollRowToVisible(tableView.selectedRow)
+
+        tableView.selectRowIndexes(IndexSet(integer: previousRow), byExtendingSelection: false)
+        tableView.scrollRowToVisible(previousRow)
+        // Focus stays in searchField automatically
       }
       return true
     }
