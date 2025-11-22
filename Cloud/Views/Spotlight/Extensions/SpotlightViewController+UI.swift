@@ -126,11 +126,11 @@ extension SpotlightViewController {
 
       askBadgeLabel.leadingAnchor.constraint(equalTo: askBadgeContainer.leadingAnchor, constant: 10),
       askBadgeLabel.trailingAnchor.constraint(equalTo: askBadgeContainer.trailingAnchor, constant: -10),
-      askBadgeLabel.topAnchor.constraint(equalTo: askBadgeContainer.topAnchor, constant: 6),
-      askBadgeLabel.bottomAnchor.constraint(equalTo: askBadgeContainer.bottomAnchor, constant: -6),
+      askBadgeLabel.topAnchor.constraint(equalTo: askBadgeContainer.topAnchor, constant: 5),
+      askBadgeLabel.bottomAnchor.constraint(equalTo: askBadgeContainer.bottomAnchor, constant: -5),
 
       searchField.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -20),
-      searchField.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
+      searchField.firstBaselineAnchor.constraint(equalTo: askBadgeLabel.firstBaselineAnchor),
       searchField.heightAnchor.constraint(equalToConstant: 32),
 
       searchContainer.heightAnchor.constraint(equalToConstant: 68),

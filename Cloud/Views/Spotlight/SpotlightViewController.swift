@@ -76,12 +76,18 @@ class SpotlightViewController: NSViewController {
     }
   }
 
+  private var wasInAskMode = false
+
   func updateAskBadge() {
     guard askBadgeContainer != nil,
       searchFieldLeadingToIcon != nil,
       searchFieldLeadingToBadge != nil else { return }
 
     let shouldShowBadge = viewModel?.isAskMode ?? false
+
+    // Detect transition into Ask mode for glow animation
+    let justEnteredAskMode = shouldShowBadge && !wasInAskMode
+    wasInAskMode = shouldShowBadge
 
     askBadgeContainer.isHidden = !shouldShowBadge
     askBadgeContainer.alphaValue = shouldShowBadge ? 1 : 0
@@ -92,6 +98,52 @@ class SpotlightViewController: NSViewController {
     searchFieldLeadingToBadge.isActive = shouldShowBadge
 
     view.layoutSubtreeIfNeeded()
+
+    // Trigger glow animation when entering Ask mode
+    if justEnteredAskMode {
+      animateAskBadgeGlow()
+    }
+  }
+
+  func animateAskBadgeGlow() {
+    guard let layer = askBadgeContainer.layer else { return }
+
+    // Create glow effect
+    let glowColor = NSColor.systemPurple.withAlphaComponent(0.8).cgColor
+
+    // Shadow glow animation
+    let shadowAnimation = CABasicAnimation(keyPath: "shadowOpacity")
+    shadowAnimation.fromValue = 0
+    shadowAnimation.toValue = 1
+    shadowAnimation.duration = 0.2
+    shadowAnimation.autoreverses = true
+    shadowAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+    let shadowRadiusAnimation = CABasicAnimation(keyPath: "shadowRadius")
+    shadowRadiusAnimation.fromValue = 0
+    shadowRadiusAnimation.toValue = 15
+    shadowRadiusAnimation.duration = 0.2
+    shadowRadiusAnimation.autoreverses = true
+    shadowRadiusAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+    // Apply shadow properties
+    layer.shadowColor = glowColor
+    layer.shadowOffset = .zero
+    layer.shadowOpacity = 0
+
+    // Run animations
+    layer.add(shadowAnimation, forKey: "glowOpacity")
+    layer.add(shadowRadiusAnimation, forKey: "glowRadius")
+  }
+
+  func exitAskMode() {
+    viewModel.isAskMode = false
+    viewModel.askQuestion = ""
+    searchField.stringValue = ""
+    viewModel.searchQuery = ""
+    updateAskBadge()
+    updateIcon()
+    updateResults()
   }
 
   func close() {

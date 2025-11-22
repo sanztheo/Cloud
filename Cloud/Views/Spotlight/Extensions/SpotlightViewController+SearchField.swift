@@ -20,6 +20,13 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       // Escape key
       close()
       return true
+    } else if commandSelector == #selector(NSResponder.deleteBackward(_:)) {
+      // Backspace key - exit Ask mode if field is empty
+      if viewModel.isAskMode && searchField.stringValue.isEmpty {
+        exitAskMode()
+        return true
+      }
+      return false
     } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
       // Down arrow - navigate table while keeping focus in search field (Arc-style)
       if !searchResults.isEmpty {
