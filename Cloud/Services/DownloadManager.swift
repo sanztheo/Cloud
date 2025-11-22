@@ -25,6 +25,14 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
 
   // MARK: - Download Management
 
+  func trackDownload(_ download: WKDownload) {
+    activeDownloadsQueue.sync(flags: .barrier) {
+      // Generate a UUID for this download (we'll match it when we get the delegate callback)
+      let downloadId = UUID()
+      activeDownloads[download] = downloadId
+    }
+  }
+
   func startDownload(url: URL, suggestedFilename: String, downloadSize: Int64 = 0) {
     let destinationURL = downloadsDirectory.appendingPathComponent(suggestedFilename)
     let download = DownloadItem(

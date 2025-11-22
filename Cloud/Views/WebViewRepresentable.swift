@@ -99,6 +99,44 @@ struct WebViewRepresentable: NSViewRepresentable {
       handleNavigationError(error, in: webView)
     }
 
+    // MARK: - Download Handling
+    func webView(
+      _ webView: WKWebView,
+      decidePolicyFor navigationResponse: WKNavigationResponse,
+      decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+      // Check if the response can be displayed in the web view
+      if !navigationResponse.canShowMIMEType {
+        // Non-displayable MIME type, trigger download
+        decisionHandler(.download)
+      } else {
+        // Normal content, display it
+        decisionHandler(.allow)
+      }
+    }
+
+    func webView(
+      _ webView: WKWebView,
+      navigationAction: WKNavigationAction,
+      didBecome download: WKDownload
+    ) {
+      // Set the download manager as the delegate for this download
+      download.delegate = parent.viewModel.downloadManager
+      // Track this download in the manager
+      parent.viewModel.downloadManager.trackDownload(download)
+    }
+
+    func webView(
+      _ webView: WKWebView,
+      navigationResponse: WKNavigationResponse,
+      didBecome download: WKDownload
+    ) {
+      // Set the download manager as the delegate for this download
+      download.delegate = parent.viewModel.downloadManager
+      // Track this download in the manager
+      parent.viewModel.downloadManager.trackDownload(download)
+    }
+
     // MARK: - Helper Methods
     // SUPPRIMÉ: detectCaptcha, reinjectStealthScripts
     // Ces méthodes sont contre-productives et détectées par les systèmes anti-bot
