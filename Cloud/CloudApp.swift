@@ -89,17 +89,16 @@ struct CloudApp: App {
 // MARK: - App Delegate
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Configure window with custom traffic lights (Arc style)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             if let window = NSApp.windows.first {
-                // Hide default traffic lights
-                window.standardWindowButton(.closeButton)?.isHidden = true
-                window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-                window.standardWindowButton(.zoomButton)?.isHidden = true
-
-                // Make title bar transparent
+                // Make title bar transparent but keep native traffic lights
                 window.titlebarAppearsTransparent = true
                 window.titleVisibility = .hidden
+
+                // Ensure traffic lights are visible and functional
+                window.standardWindowButton(.closeButton)?.isHidden = false
+                window.standardWindowButton(.miniaturizeButton)?.isHidden = false
+                window.standardWindowButton(.zoomButton)?.isHidden = false
 
                 // Maximize window to fill screen (not fullscreen)
                 if let screen = window.screen ?? NSScreen.main {
