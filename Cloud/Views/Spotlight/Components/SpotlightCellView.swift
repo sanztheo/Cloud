@@ -165,7 +165,8 @@ class SpotlightCellView: NSTableCellView {
         ]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint = CGPoint(x: 1, y: 1)
-        gradientLayer.frame = iconBackground.bounds
+        // Use fixed size as bounds might be zero during initial layout
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 36, height: 36)
         gradientLayer.cornerRadius = 10  // "Pas full" -> Rounded square
         gradientLayer.borderWidth = 2
         gradientLayer.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
