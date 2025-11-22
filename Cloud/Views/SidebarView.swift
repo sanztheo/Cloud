@@ -47,6 +47,47 @@ struct SidebarView: View {
     return theme.mode == .dark ? .white.opacity(0.3) : Color.black.opacity(0.4)
   }
 
+  // MARK: - Adjacent Spaces
+  private var previousSpaceId: UUID? {
+    guard let currentId = viewModel.activeSpaceId,
+          let currentIndex = viewModel.spaces.firstIndex(where: { $0.id == currentId }),
+          currentIndex > 0 else { return nil }
+    return viewModel.spaces[currentIndex - 1].id
+  }
+
+  private var nextSpaceId: UUID? {
+    guard let currentId = viewModel.activeSpaceId,
+          let currentIndex = viewModel.spaces.firstIndex(where: { $0.id == currentId }),
+          currentIndex < viewModel.spaces.count - 1 else { return nil }
+    return viewModel.spaces[currentIndex + 1].id
+  }
+
+  private func calculateTabsOffset(containerWidth: CGFloat) -> CGFloat {
+    // Base offset to center on current space
+    let baseOffset: CGFloat = previousSpaceId != nil ? -containerWidth : 0
+    // Add drag offset
+    return baseOffset + viewModel.spaceSwipeDragOffset
+  }
+
+  @ViewBuilder
+  private func tabsListContent(for spaceId: UUID) -> some View {
+    ScrollView {
+      LazyVStack(spacing: 4) {
+        let pinnedTabs = viewModel.pinnedTabsForSpace(spaceId)
+        if !pinnedTabs.isEmpty {
+          pinnedTabsSection(pinnedTabs)
+        }
+
+        let unpinnedTabs = viewModel.unpinnedTabsForSpace(spaceId)
+        ForEach(unpinnedTabs) { tab in
+          tabRow(tab)
+        }
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 8)
+    }
+  }
+
   var body: some View {
     VStack(spacing: 0) {
       // Window controls (Arc style)
@@ -71,33 +112,28 @@ struct SidebarView: View {
       Divider()
         .padding(.horizontal, 12)
 
-      // Tabs list with swipe gesture offset
-      ScrollView {
-        LazyVStack(spacing: 4) {
-          // Pinned tabs
-          if let spaceId = viewModel.activeSpaceId {
-            let pinnedTabs = viewModel.pinnedTabsForSpace(spaceId)
-            if !pinnedTabs.isEmpty {
-              pinnedTabsSection(pinnedTabs)
-            }
+      // Tabs list with swipe gesture - shows adjacent spaces during swipe
+      GeometryReader { geometry in
+        HStack(spacing: 0) {
+          // Previous space tabs (left)
+          if let prevSpaceId = previousSpaceId {
+            tabsListContent(for: prevSpaceId)
+              .frame(width: geometry.size.width)
+          }
 
-            // Regular tabs
-            let unpinnedTabs = viewModel.unpinnedTabsForSpace(spaceId)
-            ForEach(unpinnedTabs) { tab in
-              tabRow(tab)
-            }
+          // Current space tabs (center)
+          if let currentSpaceId = viewModel.activeSpaceId {
+            tabsListContent(for: currentSpaceId)
+              .frame(width: geometry.size.width)
+          }
+
+          // Next space tabs (right)
+          if let nextSpaceId = nextSpaceId {
+            tabsListContent(for: nextSpaceId)
+              .frame(width: geometry.size.width)
           }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .id(viewModel.activeSpaceId)
-        .offset(x: viewModel.spaceSwipeDragOffset)
-        .transition(
-          .asymmetric(
-            insertion: .move(edge: viewModel.transitionDirection),
-            removal: .move(edge: viewModel.transitionDirection == .leading ? .trailing : .leading)
-          )
-        )
+        .offset(x: calculateTabsOffset(containerWidth: geometry.size.width))
       }
       .clipped()
 
