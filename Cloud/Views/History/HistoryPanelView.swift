@@ -23,22 +23,31 @@ struct HistoryPanelView: View {
     var label: String { rawValue }
   }
 
-  // MARK: - Colors
+  // MARK: - Colors (same as SidebarView)
 
   private var backgroundColor: Color {
     theme?.sidebarBackground ?? AppColors.sidebarBackground
   }
 
   private var textColor: Color {
-    theme?.mode == .dark ? .white : Color.black.opacity(0.8)
+    guard let theme = theme else {
+      return Color.black.opacity(0.8)
+    }
+    return theme.mode == .dark ? .white : Color.black.opacity(0.8)
   }
 
   private var secondaryTextColor: Color {
-    theme?.mode == .dark ? .white.opacity(0.6) : Color.black.opacity(0.5)
+    guard let theme = theme else {
+      return Color.black.opacity(0.5)
+    }
+    return theme.mode == .dark ? .white.opacity(0.6) : Color.black.opacity(0.5)
   }
 
   private var accentColor: Color {
-    theme?.baseColor ?? Color.blue
+    guard let theme = theme else {
+      return Color.black.opacity(0.6)
+    }
+    return theme.mode == .dark ? .white.opacity(0.8) : Color.black.opacity(0.6)
   }
 
   // MARK: - Body
@@ -71,8 +80,6 @@ struct HistoryPanelView: View {
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
-
-      Divider().foregroundColor(Color.black.opacity(0.15))
     }
   }
 
@@ -88,26 +95,44 @@ struct HistoryPanelView: View {
     .help("Back")
   }
 
+  @State private var showFilterMenu = false
+
   private var filterMenu: some View {
-    Menu {
-      ForEach(HistoryFilter.allCases, id: \.self) { filter in
-        Button(action: { selectedFilter = filter }) {
-          HStack {
-            Text(filter.label)
-            if selectedFilter == filter {
-              Image(systemName: "checkmark")
-            }
-          }
-        }
-      }
-    } label: {
+    Button(action: { showFilterMenu.toggle() }) {
       Image(systemName: "line.3.horizontal.decrease.circle")
         .font(.system(size: 16, weight: .semibold))
-        .foregroundColor(accentColor)
+        .foregroundColor(secondaryTextColor)
         .frame(width: 32, height: 32)
         .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
     .help("Filter history")
+    .popover(isPresented: $showFilterMenu, arrowEdge: .bottom) {
+      VStack(alignment: .leading, spacing: 0) {
+        ForEach(HistoryFilter.allCases, id: \.self) { filter in
+          Button(action: {
+            selectedFilter = filter
+            showFilterMenu = false
+          }) {
+            HStack {
+              Text(filter.label)
+                .foregroundColor(.primary)
+              Spacer()
+              if selectedFilter == filter {
+                Image(systemName: "checkmark")
+                  .foregroundColor(.accentColor)
+              }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+        }
+      }
+      .padding(.vertical, 4)
+      .frame(width: 140)
+    }
   }
 
   // MARK: - Search Field
@@ -119,10 +144,17 @@ struct HistoryPanelView: View {
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(secondaryTextColor)
 
-        TextField("Search history", text: $searchText)
-          .textFieldStyle(.plain)
-          .font(.system(size: 14))
-          .foregroundColor(textColor)
+        ZStack(alignment: .leading) {
+          if searchText.isEmpty {
+            Text("Search history")
+              .font(.system(size: 14))
+              .foregroundColor(secondaryTextColor)
+          }
+          TextField("", text: $searchText)
+            .textFieldStyle(.plain)
+            .font(.system(size: 14))
+            .foregroundColor(textColor)
+        }
 
         if !searchText.isEmpty {
           Button(action: { searchText = "" }) {
@@ -135,7 +167,7 @@ struct HistoryPanelView: View {
       }
       .padding(.horizontal, 12)
       .padding(.vertical, 8)
-      .background(Color.black.opacity(0.04))
+      .background(Color.black.opacity(0.1))
       .cornerRadius(6)
       .padding(.horizontal, 12)
       .padding(.vertical, 10)
@@ -314,6 +346,10 @@ struct HistoryItemRow: View {
 
   @State private var isHovering = false
   @State private var favicon: NSImage?
+  @State private var showContextMenu = false
+  @State private var hoverCopy = false
+  @State private var hoverOpen = false
+  @State private var hoverRemove = false
 
   var body: some View {
     VStack(spacing: 0) {
@@ -334,7 +370,7 @@ struct HistoryItemRow: View {
       titleAndUrl
       Spacer()
       timeLabel
-      if isHovering { contextMenu }
+      if isHovering || showContextMenu { contextMenu }
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
@@ -379,22 +415,81 @@ struct HistoryItemRow: View {
   }
 
   private var contextMenu: some View {
-    Menu {
-      Button(action: copyLink) {
-        Label("Copy Link", systemImage: "doc.on.doc")
-      }
-      Button(action: openInNewWindow) {
-        Label("Open in New Window", systemImage: "arrow.up.right")
-      }
-      Divider()
-      Button(role: .destructive, action: { onRemove?() }) {
-        Label("Remove", systemImage: "trash")
-      }
-    } label: {
+    Button(action: { showContextMenu.toggle() }) {
       Image(systemName: "ellipsis")
         .font(.system(size: 14))
         .foregroundColor(accentColor)
         .frame(width: 24, height: 24)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .popover(isPresented: $showContextMenu, arrowEdge: .bottom) {
+      VStack(alignment: .leading, spacing: 0) {
+        Button(action: {
+          copyLink()
+          showContextMenu = false
+        }) {
+          HStack(spacing: 8) {
+            Image(systemName: "doc.on.doc")
+              .frame(width: 16)
+            Text("Copy Link")
+            Spacer()
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+          .frame(maxWidth: .infinity)
+          .background(hoverCopy ? Color.primary.opacity(0.1) : Color.clear)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.primary)
+        .onHover { hoverCopy = $0 }
+
+        Button(action: {
+          openInNewWindow()
+          showContextMenu = false
+        }) {
+          HStack(spacing: 8) {
+            Image(systemName: "arrow.up.right")
+              .frame(width: 16)
+            Text("Open in New Window")
+            Spacer()
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+          .frame(maxWidth: .infinity)
+          .background(hoverOpen ? Color.primary.opacity(0.1) : Color.clear)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.primary)
+        .onHover { hoverOpen = $0 }
+
+        Divider()
+          .padding(.vertical, 4)
+
+        Button(action: {
+          onRemove?()
+          showContextMenu = false
+        }) {
+          HStack(spacing: 8) {
+            Image(systemName: "trash")
+              .frame(width: 16)
+            Text("Remove")
+            Spacer()
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+          .frame(maxWidth: .infinity)
+          .background(hoverRemove ? Color.red.opacity(0.1) : Color.clear)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.red)
+        .onHover { hoverRemove = $0 }
+      }
+      .padding(.vertical, 4)
+      .frame(width: 180)
     }
   }
 

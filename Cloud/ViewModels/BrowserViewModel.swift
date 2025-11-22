@@ -601,20 +601,11 @@ class BrowserViewModel: ObservableObject {
 
     let lowercasedQuery = query.lowercased()
 
-    // 1. ALWAYS add search suggestion first (allows instant Enter)
-    let searchUrl = URL(
-      string: "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
-    )
-    results.append(
-      SearchResult(
-        type: .suggestion,
-        title: query,
-        subtitle: "Search Google",
-        url: searchUrl
-      ))
+    // Check if query looks like a URL (contains "://" OR contains dot and no spaces)
+    let looksLikeURL = query.contains("://") || (query.contains(".") && !query.contains(" "))
 
-    // 2. Check if query looks like a URL (contains dot and no spaces)
-    if query.contains(".") && !query.contains(" ") {
+    // 1. If it looks like a URL, add "Open website" FIRST (so Enter navigates directly)
+    if looksLikeURL {
       let urlString = query.hasPrefix("http") ? query : "https://\(query)"
       if let url = URL(string: urlString) {
         results.append(
@@ -626,6 +617,18 @@ class BrowserViewModel: ObservableObject {
           ))
       }
     }
+
+    // 2. Add search suggestion (second if URL, first otherwise)
+    let searchUrl = URL(
+      string: "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
+    )
+    results.append(
+      SearchResult(
+        type: .suggestion,
+        title: query,
+        subtitle: "Search Google",
+        url: searchUrl
+      ))
 
     // 3. Add Google suggestions (skip if matches the first search result)
     for suggestion in suggestions where suggestion.title.lowercased() != lowercasedQuery {
