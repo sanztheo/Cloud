@@ -36,6 +36,7 @@ class BrowserViewModel: ObservableObject {
   // MARK: - WebView Management
   private var webViews: [UUID: WKWebView] = [:]
   private var cancellables = Set<AnyCancellable>()
+  private var loadingObservations: [UUID: NSKeyValueObservation] = [:]
 
   // MARK: - Search Suggestions
   private let suggestionsService = GoogleSuggestionsService()
@@ -114,6 +115,7 @@ class BrowserViewModel: ObservableObject {
     loadActiveIds()
 
     // Create WebViews for all restored tabs (allow 0 tabs)
+    // KVO observers are set up in createWebView() to automatically sync isLoading state
     for tab in tabs {
       _ = createWebView(for: tab)
     }
@@ -135,7 +137,20 @@ class BrowserViewModel: ObservableObject {
     // ✓ Pas d'injection JavaScript agressive (détectée par OpenAI/Claude)
 
     webViews[tab.id] = webView
-    loadURL(tab.url, for: tab.id)
+
+    // Observe isLoading via KVO to sync with tab model
+    // This ensures isLoading is updated even without navigationDelegate
+    let tabId = tab.id
+    loadingObservations[tabId] = webView.observe(\.isLoading, options: [.new]) { [weak self] webView, change in
+      guard let self = self else { return }
+      DispatchQueue.main.async {
+        if let index = self.tabs.firstIndex(where: { $0.id == tabId }) {
+          self.tabs[index].isLoading = webView.isLoading
+        }
+      }
+    }
+
+    loadURL(tab.url, for: tabId)
 
     return webView
   }
@@ -178,8 +193,9 @@ class BrowserViewModel: ObservableObject {
     guard let tab = tabs.first(where: { $0.id == tabId }) else { return }
     let closedTabSpaceId = tab.spaceId
 
-    // Remove WebView
+    // Remove WebView and KVO observation
     webViews.removeValue(forKey: tabId)
+    loadingObservations.removeValue(forKey: tabId)
     tabs.removeAll { $0.id == tabId }
 
     // Update active tab - only select tabs from the SAME space
@@ -376,11 +392,27 @@ class BrowserViewModel: ObservableObject {
   func selectSpace(_ spaceId: UUID) {
     activeSpaceId = spaceId
 
+    // Sync isLoading state with actual WebView state for tabs in this space
+    // This fixes the bug where tabs show loading spinner after app restart
+    // because the navigationDelegate wasn't assigned when WebViews were created
+    syncLoadingStateForSpace(spaceId)
+
     // Select first tab in space (0 tabs = Welcome to Cloud)
     if let firstTab = tabs.first(where: { $0.spaceId == spaceId }) {
       activeTabId = firstTab.id
     } else {
       activeTabId = nil
+    }
+  }
+
+  /// Synchronizes the isLoading state of tabs with the actual WebView loading state
+  private func syncLoadingStateForSpace(_ spaceId: UUID) {
+    for i in tabs.indices where tabs[i].spaceId == spaceId {
+      let tabId = tabs[i].id
+      if let webView = webViews[tabId] {
+        // Sync with actual WebView state
+        tabs[i].isLoading = webView.isLoading
+      }
     }
   }
 

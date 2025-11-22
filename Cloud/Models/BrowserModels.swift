@@ -42,9 +42,25 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     self.spaceId = spaceId
   }
 
-  // Custom coding keys to exclude favicon (NSImage is not Codable)
+  // Custom coding keys to exclude favicon (NSImage is not Codable) and isLoading (runtime state)
   enum CodingKeys: String, CodingKey {
-    case id, url, title, isLoading, canGoBack, canGoForward, isPinned, spaceId
+    case id, url, title, canGoBack, canGoForward, isPinned, spaceId
+    // Note: isLoading is excluded - it's a runtime state, not persisted
+  }
+
+  // Custom decoder to handle isLoading (not persisted, always starts as false)
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(UUID.self, forKey: .id)
+    url = try container.decode(URL.self, forKey: .url)
+    title = try container.decode(String.self, forKey: .title)
+    canGoBack = try container.decode(Bool.self, forKey: .canGoBack)
+    canGoForward = try container.decode(Bool.self, forKey: .canGoForward)
+    isPinned = try container.decode(Bool.self, forKey: .isPinned)
+    spaceId = try container.decode(UUID.self, forKey: .spaceId)
+    // Runtime state - not persisted
+    favicon = nil
+    isLoading = false
   }
 
   static func == (lhs: BrowserTab, rhs: BrowserTab) -> Bool {
