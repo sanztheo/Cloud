@@ -17,8 +17,12 @@ struct SpotlightViewAppKit: NSViewControllerRepresentable {
   }
 
   func updateNSViewController(_ nsViewController: SpotlightViewController, context: Context) {
-    // Sync search field with viewModel (fixes stale query bug when reopening)
-    nsViewController.searchField.stringValue = viewModel.searchQuery
+    // Only sync search field if user is NOT actively typing (prevents character loss)
+    let isUserTyping = nsViewController.searchField.currentEditor() != nil
+    if !isUserTyping && nsViewController.searchField.stringValue != viewModel.searchQuery {
+      nsViewController.searchField.stringValue = viewModel.searchQuery
+    }
+
     nsViewController.updateIcon()
     nsViewController.updateAskBadge()
 

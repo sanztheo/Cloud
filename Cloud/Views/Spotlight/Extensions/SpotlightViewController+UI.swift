@@ -101,7 +101,7 @@ extension SpotlightViewController {
     askBadgeContainer.alphaValue = 0
     searchContainer.addSubview(askBadgeContainer)
 
-    askBadgeLabel = NSTextField(labelWithString: "[Page]")
+    askBadgeLabel = NSTextField(labelWithString: "Ask About Webpage")
     askBadgeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
     askBadgeLabel.textColor = NSColor.systemPurple
     askBadgeLabel.alignment = .center
