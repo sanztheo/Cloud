@@ -17,6 +17,7 @@ Icon
 DerivedData/
 build/
 claudedocs/
+default.profraw
 Build/
 
 # Xcode user data
