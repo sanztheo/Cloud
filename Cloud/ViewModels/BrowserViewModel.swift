@@ -24,6 +24,7 @@ class BrowserViewModel: ObservableObject {
   @Published var addressBarText: String = ""
   @Published var spotlightSelectedIndex: Int = 0
   @Published var transitionDirection: Edge = .trailing
+  @Published var spaceSwipeDragOffset: CGFloat = 0
 
   // Summary functionality
   @Published var isSummarizing: Bool = false
@@ -192,6 +193,13 @@ class BrowserViewModel: ObservableObject {
   }
 
   func selectTab(_ tabId: UUID) {
+    // Determine transition direction based on tab index
+    if let currentTabId = activeTabId,
+       let currentIndex = tabs.firstIndex(where: { $0.id == currentTabId }),
+       let newIndex = tabs.firstIndex(where: { $0.id == tabId }) {
+      transitionDirection = newIndex > currentIndex ? .trailing : .leading
+    }
+
     activeTabId = tabId
     if let tab = tabs.first(where: { $0.id == tabId }) {
       addressBarText = tab.url.absoluteString

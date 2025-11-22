@@ -71,7 +71,7 @@ struct SidebarView: View {
       Divider()
         .padding(.horizontal, 12)
 
-      // Tabs list
+      // Tabs list with swipe gesture offset
       ScrollView {
         LazyVStack(spacing: 4) {
           // Pinned tabs
@@ -91,6 +91,7 @@ struct SidebarView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
         .id(viewModel.activeSpaceId)
+        .offset(x: viewModel.spaceSwipeDragOffset)
         .transition(
           .asymmetric(
             insertion: .move(edge: viewModel.transitionDirection),
@@ -98,6 +99,7 @@ struct SidebarView: View {
           )
         )
       }
+      .clipped()
 
       Spacer()
 
@@ -114,7 +116,17 @@ struct SidebarView: View {
           },
           onSwipeRight: {
             viewModel.switchToPreviousSpace()
-          }
+          },
+          onDragOffsetChanged: { offset in
+            viewModel.spaceSwipeDragOffset = offset
+          },
+          onDragEnded: { _ in
+            // Animate back to zero (snap back or after space switch)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+              viewModel.spaceSwipeDragOffset = 0
+            }
+          },
+          sidebarWidth: 240
         )
       }
     )
