@@ -318,11 +318,8 @@ struct HistoryPanelView: View {
     let components = calendar.dateComponents([.day, .year], from: date, to: now)
     let dayDiff = components.day ?? 0
 
-    if dayDiff < 7 { return "\(dayDiff) days ago" }
-    if dayDiff < 30 {
-      let weeks = dayDiff / 7
-      return "\(weeks) week\(weeks > 1 ? "s" : "") ago"
-    }
+    if dayDiff < 7 { return "This Week" }
+    if dayDiff < 30 { return "This Month" }
     if dayDiff < 365 {
       let months = dayDiff / 30
       return "\(months) month\(months > 1 ? "s" : "") ago"
@@ -348,7 +345,6 @@ struct HistoryItemRow: View {
   @State private var favicon: NSImage?
   @State private var showContextMenu = false
   @State private var hoverCopy = false
-  @State private var hoverOpen = false
   @State private var hoverRemove = false
 
   var body: some View {
@@ -409,7 +405,7 @@ struct HistoryItemRow: View {
   }
 
   private var timeLabel: some View {
-    Text(entry.visitDate.formatted(date: .omitted, time: .shortened))
+    Text(entry.visitDate.formatted(date: .abbreviated, time: .shortened))
       .font(.system(size: 11))
       .foregroundColor(secondaryTextColor)
   }
@@ -445,26 +441,6 @@ struct HistoryItemRow: View {
         .foregroundColor(.primary)
         .onHover { hoverCopy = $0 }
 
-        Button(action: {
-          openInNewWindow()
-          showContextMenu = false
-        }) {
-          HStack(spacing: 8) {
-            Image(systemName: "arrow.up.right")
-              .frame(width: 16)
-            Text("Open in New Window")
-            Spacer()
-          }
-          .padding(.horizontal, 12)
-          .padding(.vertical, 8)
-          .frame(maxWidth: .infinity)
-          .background(hoverOpen ? Color.primary.opacity(0.1) : Color.clear)
-          .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundColor(.primary)
-        .onHover { hoverOpen = $0 }
-
         Divider()
           .padding(.vertical, 4)
 
@@ -496,10 +472,6 @@ struct HistoryItemRow: View {
   private func copyLink() {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(entry.url.absoluteString, forType: .string)
-  }
-
-  private func openInNewWindow() {
-    NSWorkspace.shared.open(entry.url)
   }
 
   private func loadFavicon() {
