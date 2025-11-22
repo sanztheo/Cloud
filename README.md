@@ -7,7 +7,7 @@
   ![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)
   ![Platform](https://img.shields.io/badge/Platform-macOS-blue.svg)
   ![SwiftUI](https://img.shields.io/badge/SwiftUI-Yes-green.svg)
-  ![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)
+  ![License](https://img.shields.io/badge/License-Proprietary-red.svg)
 </div>
 
 ---
@@ -161,7 +161,13 @@ Les contributions sont les bienvenues ! N'hésitez pas à :
 
 ## 📝 License
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+Ce projet est sous licence **Propriétaire**. Tous droits réservés.
+
+Toute copie, modification ou distribution de ce code nécessite une autorisation écrite préalable.
+
+📧 **Contact pour autorisation:** sanztheopro@gmail.com
+
+Voir le fichier `LICENSE` pour plus de détails.
 
 ---
 
