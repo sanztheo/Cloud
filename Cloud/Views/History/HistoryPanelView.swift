@@ -298,7 +298,7 @@ struct HistoryPanelView: View {
       groups[dateKey, default: []].append(entry)
     }
 
-    let dateOrder = ["Today", "Yesterday"]
+    let dateOrder = ["Today", "Yesterday", "This Week", "This Month"]
     let sortedKeys = groups.keys.sorted { a, b in
       if let aIdx = dateOrder.firstIndex(of: a), let bIdx = dateOrder.firstIndex(of: b) {
         return aIdx < bIdx
