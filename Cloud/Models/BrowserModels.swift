@@ -9,11 +9,11 @@ import Foundation
 import SwiftUI
 
 // MARK: - Tab Model
-struct BrowserTab: Identifiable, Equatable {
+struct BrowserTab: Identifiable, Equatable, Codable {
   let id: UUID
   var url: URL
   var title: String
-  var favicon: NSImage?
+  var favicon: NSImage?  // Not persisted, reloaded on restore
   var isLoading: Bool
   var canGoBack: Bool
   var canGoForward: Bool
@@ -40,6 +40,11 @@ struct BrowserTab: Identifiable, Equatable {
     self.canGoForward = canGoForward
     self.isPinned = isPinned
     self.spaceId = spaceId
+  }
+
+  // Custom coding keys to exclude favicon (NSImage is not Codable)
+  enum CodingKeys: String, CodingKey {
+    case id, url, title, isLoading, canGoBack, canGoForward, isPinned, spaceId
   }
 
   static func == (lhs: BrowserTab, rhs: BrowserTab) -> Bool {

@@ -109,17 +109,26 @@ class BrowserViewModel: ObservableObject {
       saveSpaces()
     }
 
-    // Create initial tab
-    let initialTab = BrowserTab(
-      url: URL(string: "https://www.google.com")!,
-      title: "Google",
-      spaceId: spaces.first!.id
-    )
-    tabs = [initialTab]
-    activeTabId = initialTab.id
+    // Load persisted tabs
+    loadTabs()
+    loadActiveIds()
 
-    // Create WebView for initial tab
-    _ = createWebView(for: initialTab)
+    // If no tabs were restored, create initial tab
+    if tabs.isEmpty {
+      let initialTab = BrowserTab(
+        url: URL(string: "https://www.google.com")!,
+        title: "Google",
+        spaceId: spaces.first!.id
+      )
+      tabs = [initialTab]
+      activeTabId = initialTab.id
+      _ = createWebView(for: initialTab)
+    } else {
+      // Create WebViews for all restored tabs
+      for tab in tabs {
+        _ = createWebView(for: tab)
+      }
+    }
   }
 
   // MARK: - WebView Management
@@ -172,6 +181,9 @@ class BrowserViewModel: ObservableObject {
 
     // Load favicon for the new tab
     loadFavicon(for: newTab.id, url: targetUrl)
+
+    // Persist tabs
+    saveTabs()
   }
 
   func closeTab(_ tabId: UUID) {
@@ -190,6 +202,9 @@ class BrowserViewModel: ObservableObject {
         activeTabId = tabs[newIndex].id
       }
     }
+
+    // Persist tabs
+    saveTabs()
   }
 
   func selectTab(_ tabId: UUID) {
@@ -204,17 +219,22 @@ class BrowserViewModel: ObservableObject {
     if let tab = tabs.first(where: { $0.id == tabId }) {
       addressBarText = tab.url.absoluteString
     }
+
+    // Persist active tab
+    saveTabs()
   }
 
   func pinTab(_ tabId: UUID) {
     if let index = tabs.firstIndex(where: { $0.id == tabId }) {
       tabs[index].isPinned.toggle()
+      saveTabs()
     }
   }
 
   func moveTab(_ tabId: UUID, toSpace spaceId: UUID) {
     if let index = tabs.firstIndex(where: { $0.id == tabId }) {
       tabs[index].spaceId = spaceId
+      saveTabs()
     }
   }
 
@@ -295,8 +315,11 @@ class BrowserViewModel: ObservableObject {
   ) {
     guard let index = tabs.firstIndex(where: { $0.id == tabId }) else { return }
 
+    var shouldPersist = false
+
     if let title = title {
       tabs[index].title = title
+      shouldPersist = true
     }
     if let url = url {
       tabs[index].url = url
@@ -305,6 +328,7 @@ class BrowserViewModel: ObservableObject {
       }
       // Load favicon when URL changes
       loadFavicon(for: tabId, url: url)
+      shouldPersist = true
     }
     if let isLoading = isLoading {
       tabs[index].isLoading = isLoading
@@ -314,6 +338,11 @@ class BrowserViewModel: ObservableObject {
     }
     if let canGoForward = canGoForward {
       tabs[index].canGoForward = canGoForward
+    }
+
+    // Persist only when URL or title changes (not for loading state changes)
+    if shouldPersist {
+      saveTabs()
     }
   }
 
@@ -733,9 +762,55 @@ class BrowserViewModel: ObservableObject {
 
   // MARK: - Persistence
   private func loadPersistedData() {
-    loadSpaces()
     loadBookmarks()
     loadHistory()
+  }
+
+  // MARK: - Tabs Persistence
+  func saveTabs() {
+    if let encoded = try? JSONEncoder().encode(tabs) {
+      UserDefaults.standard.set(encoded, forKey: "cloud_tabs")
+    }
+    saveActiveIds()
+  }
+
+  private func loadTabs() {
+    if let data = UserDefaults.standard.data(forKey: "cloud_tabs"),
+       let decoded = try? JSONDecoder().decode([BrowserTab].self, from: data),
+       !decoded.isEmpty {
+      tabs = decoded
+      // Reload favicons for restored tabs
+      for tab in tabs {
+        loadFavicon(for: tab.id, url: tab.url)
+      }
+    }
+  }
+
+  private func saveActiveIds() {
+    if let activeTabId = activeTabId {
+      UserDefaults.standard.set(activeTabId.uuidString, forKey: "cloud_activeTabId")
+    }
+    if let activeSpaceId = activeSpaceId {
+      UserDefaults.standard.set(activeSpaceId.uuidString, forKey: "cloud_activeSpaceId")
+    }
+  }
+
+  private func loadActiveIds() {
+    if let tabIdString = UserDefaults.standard.string(forKey: "cloud_activeTabId"),
+       let tabId = UUID(uuidString: tabIdString),
+       tabs.contains(where: { $0.id == tabId }) {
+      activeTabId = tabId
+    } else if let firstTab = tabs.first {
+      activeTabId = firstTab.id
+    }
+
+    if let spaceIdString = UserDefaults.standard.string(forKey: "cloud_activeSpaceId"),
+       let spaceId = UUID(uuidString: spaceIdString),
+       spaces.contains(where: { $0.id == spaceId }) {
+      activeSpaceId = spaceId
+    } else if let firstSpace = spaces.first {
+      activeSpaceId = firstSpace.id
+    }
   }
 
   private func saveBookmarks() {
