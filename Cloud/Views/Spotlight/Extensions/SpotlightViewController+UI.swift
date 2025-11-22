@@ -43,6 +43,7 @@ extension SpotlightViewController {
       cell.isBordered = false
       cell.isBezeled = false
       cell.focusRingType = .none
+      cell.isScrollable = true  // Enable horizontal text scrolling
 
       // Hide search icon (magnifying glass)
       cell.searchButtonCell = nil
