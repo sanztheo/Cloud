@@ -559,7 +559,7 @@ class BrowserViewModel: ObservableObject {
     if let url = activeTab?.url {
       searchQuery = url.absoluteString
     } else {
-      searchQuery = "google.com"
+      searchQuery = ""
     }
     isSpotlightVisible = true
   }
