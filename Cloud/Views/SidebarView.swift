@@ -59,6 +59,12 @@ struct SidebarView: View {
   @State private var isEditingAddress: Bool = false
   @FocusState private var isAddressFocused: Bool
 
+  // Download notification animation
+  @State private var showDownloadBubble: Bool = false
+  @State private var bubbleOffset: CGSize = CGSize(width: 100, height: -200)
+  @State private var bubbleScale: CGFloat = 1.0
+  @State private var lastDownloadCount: Int = 0
+
   // Couleur du texte selon le mode du thème
   private var textColor: Color {
     guard let theme = viewModel.activeSpace?.theme else {
@@ -544,6 +550,25 @@ struct SidebarView: View {
     .buttonStyle(.plain)
   }
 
+  // MARK: - Download Badge Count
+  private func triggerDownloadAnimation() {
+    // Reset bubble position (start from top-right)
+    bubbleOffset = CGSize(width: 80, height: -150)
+    bubbleScale = 1.2
+    showDownloadBubble = true
+
+    // Animate bubble flying to the archive icon
+    withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+      bubbleOffset = .zero
+      bubbleScale = 0.1
+    }
+
+    // Hide bubble after animation
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+      showDownloadBubble = false
+    }
+  }
+
   // MARK: - Bottom Actions
   private var bottomActions: some View {
     VStack(spacing: 8) {
@@ -551,18 +576,52 @@ struct SidebarView: View {
 
       HStack(spacing: 6) {
         Spacer()
-          // Archive button (History + Downloads)
-          Button(action: { viewModel.toggleHistoryPanel() }) {
-            Image(systemName: "archivebox")
-              .font(.system(size: 12))
-              .foregroundColor(textColor)
-              .frame(width: 28, height: 28)
-              .background(isHoveringHistory ? Color.black.opacity(0.2) : Color.clear)
-              .clipShape(RoundedRectangle(cornerRadius: 6))
+          // Archive button (History + Downloads) with badge
+          ZStack {
+            Button(action: {
+              viewModel.toggleHistoryPanel()
+              // Clear unread count when opening
+              viewModel.clearUnreadDownloads()
+            }) {
+              Image(systemName: "archivebox")
+                .font(.system(size: 12))
+                .foregroundColor(textColor)
+                .frame(width: 28, height: 28)
+                .background(isHoveringHistory ? Color.black.opacity(0.2) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in isHoveringHistory = hovering }
+            .help("Archive (History & Downloads)")
+
+            // Download badge - shows unread downloads count
+            if viewModel.unreadDownloadsCount > 0 {
+              Text("\(viewModel.unreadDownloadsCount)")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(.white)
+                .frame(minWidth: 14, minHeight: 14)
+                .padding(.horizontal, 3)
+                .background(Color.red)
+                .clipShape(Capsule())
+                .offset(x: 10, y: -10)
+                .transition(.scale.combined(with: .opacity))
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: viewModel.unreadDownloadsCount)
+            }
+
+            // Flying bubble animation
+            if showDownloadBubble {
+              Circle()
+                .fill(Color.red)
+                .frame(width: 12, height: 12)
+                .scaleEffect(bubbleScale)
+                .offset(bubbleOffset)
+            }
           }
-          .buttonStyle(.plain)
-          .onHover { hovering in isHoveringHistory = hovering }
-          .help("Archive (History & Downloads)")
+          .onChange(of: viewModel.downloadManager.downloads.count) { oldCount, newCount in
+            if newCount > oldCount {
+              triggerDownloadAnimation()
+            }
+          }
 
           Divider()
             .frame(height: 20)

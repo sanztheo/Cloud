@@ -36,6 +36,7 @@ class BrowserViewModel: ObservableObject {
 
   // MARK: - Download Manager
   @Published var downloadManager = DownloadManager()
+  @Published var unreadDownloadsCount: Int = 0
 
   // MARK: - WebView Management
   private var webViews: [UUID: WKWebView] = [:]
@@ -71,6 +72,29 @@ class BrowserViewModel: ObservableObject {
     setupInitialData()
     loadPersistedData()
     setupSearchSubscriptions()
+    setupDownloadNotifications()
+  }
+
+  private func setupDownloadNotifications() {
+    // Listen for new downloads and increment unread count
+    downloadManager.$downloads
+      .scan(([], [])) { (previous: ([DownloadItem], [DownloadItem]), current: [DownloadItem]) -> ([DownloadItem], [DownloadItem]) in
+        return (previous.1, current)
+      }
+      .sink { [weak self] (previous, current) in
+        guard let self = self else { return }
+        // Check if new downloads were added
+        let previousIds = Set(previous.map { $0.id })
+        let newDownloads = current.filter { !previousIds.contains($0.id) }
+        if !newDownloads.isEmpty {
+          self.unreadDownloadsCount += newDownloads.count
+        }
+      }
+      .store(in: &cancellables)
+  }
+
+  func clearUnreadDownloads() {
+    unreadDownloadsCount = 0
   }
 
   private func setupSearchSubscriptions() {
