@@ -7,7 +7,7 @@
   ![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)
   ![Platform](https://img.shields.io/badge/Platform-macOS-blue.svg)
   ![SwiftUI](https://img.shields.io/badge/SwiftUI-Yes-green.svg)
-  ![License](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-red.svg)
+  ![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-orange.svg)
 </div>
 
 ---
@@ -161,17 +161,19 @@ Les contributions sont les bienvenues ! N'hésitez pas à :
 
 ## 📝 License
 
-Ce projet est sous licence **[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)**.
+Ce projet est sous licence **[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)**.
 
 | Autorisé | Interdit |
 |----------|----------|
 | ✅ Partager (non-commercial) | ❌ Usage commercial |
-| ✅ Créditer l'auteur | ❌ Modifier le code |
-| | ❌ Distribuer des versions modifiées |
+| ✅ Contribuer via PR | ❌ Créer un fork commercial |
+| ✅ Modifier (même licence) | ❌ Changer la licence |
 
-📧 **Contact pour permissions spéciales:** sanztheopro@gmail.com
+**Contributions:** En soumettant une PR, vous acceptez le [CLA](CONTRIBUTING.md#accord-de-licence-cla).
 
-Voir le fichier `LICENSE` pour plus de détails.
+📧 **Contact pour licence commerciale:** sanztheopro@gmail.com
+
+Voir les fichiers `LICENSE` et `CONTRIBUTING.md` pour plus de détails.
 
 ---
 
