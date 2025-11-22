@@ -48,10 +48,23 @@ struct BrowserView: View {
     ZStack {
       // Main content
       HStack(spacing: 0) {
-        // Sidebar
+        // Sidebar or History Panel
         if !viewModel.isSidebarCollapsed {
-          SidebarView(viewModel: viewModel)
-            .transition(.move(edge: .leading))
+          if viewModel.isHistoryPanelVisible {
+            // History panel (expanded sidebar)
+            HistoryPanelView(
+              viewModel: viewModel,
+              theme: viewModel.activeSpace?.theme,
+              isPresented: $viewModel.isHistoryPanelVisible
+            )
+            .frame(width: 380)
+            .transition(.move(edge: .leading).combined(with: .opacity))
+          } else {
+            // Normal sidebar
+            SidebarView(viewModel: viewModel)
+              .frame(width: 240)
+              .transition(.move(edge: .leading))
+          }
         }
 
         // Main browser area - Arc style (floating with padding)
@@ -79,6 +92,7 @@ struct BrowserView: View {
     .animation(.spring(response: 0.5, dampingFraction: 0.8), value: viewModel.isSummarizing)
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSpotlightVisible)
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSidebarCollapsed)
+    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isHistoryPanelVisible)
     .frame(minWidth: 800, minHeight: 600)
     .background(interpolatedBackgroundColor)
     .ignoresSafeArea(.all, edges: .top)

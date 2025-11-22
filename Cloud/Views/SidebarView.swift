@@ -53,6 +53,7 @@ struct SidebarView: View {
   @State private var hoveredTabId: UUID?
   @State private var hoveredSpaceId: UUID?
   @State private var isHoveringAddSpace: Bool = false
+  @State private var isHoveringHistory: Bool = false
   @State private var isAddingSpace: Bool = false
   @State private var isEditingSpace: Space?
   @State private var isEditingAddress: Bool = false
@@ -548,6 +549,22 @@ struct SidebarView: View {
 
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
+          // History button
+          Button(action: { viewModel.toggleHistoryPanel() }) {
+            Image(systemName: "clock.arrow.circlepath")
+              .font(.system(size: 16))
+              .foregroundColor(textColor)
+              .frame(width: 40, height: 40)
+              .background(isHoveringHistory ? Color.black.opacity(0.2) : Color.clear)
+              .clipShape(RoundedRectangle(cornerRadius: 10))
+          }
+          .buttonStyle(.plain)
+          .onHover { hovering in isHoveringHistory = hovering }
+          .help("History")
+
+          Divider()
+            .frame(height: 24)
+
           ForEach(viewModel.spaces) { space in
             spaceButton(space)
           }
