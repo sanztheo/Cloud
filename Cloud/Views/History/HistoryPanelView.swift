@@ -76,6 +76,7 @@ struct HistoryPanelView: View {
           .font(.system(size: 16, weight: .semibold))
           .foregroundColor(textColor)
         Spacer()
+        clearHistoryButton
         filterMenu
       }
       .padding(.horizontal, 16)
@@ -96,6 +97,58 @@ struct HistoryPanelView: View {
   }
 
   @State private var showFilterMenu = false
+  @State private var showClearConfirm = false
+  @State private var hoverClearConfirm = false
+  @State private var hoverClearCancel = false
+
+  private var clearHistoryButton: some View {
+    Button(action: { showClearConfirm.toggle() }) {
+      Image(systemName: "trash")
+        .font(.system(size: 14, weight: .semibold))
+        .foregroundColor(secondaryTextColor)
+        .frame(width: 32, height: 32)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .help("Clear history")
+    .popover(isPresented: $showClearConfirm, arrowEdge: .bottom) {
+      VStack(spacing: 12) {
+        Text("Clear all history?")
+          .font(.system(size: 13, weight: .medium))
+          .foregroundColor(.primary)
+
+        HStack(spacing: 8) {
+          Button(action: { showClearConfirm = false }) {
+            Text("Cancel")
+              .font(.system(size: 12, weight: .medium))
+              .padding(.horizontal, 12)
+              .padding(.vertical, 6)
+              .background(hoverClearCancel ? Color.primary.opacity(0.1) : Color.clear)
+              .cornerRadius(6)
+          }
+          .buttonStyle(.plain)
+          .foregroundColor(.primary)
+          .onHover { hoverClearCancel = $0 }
+
+          Button(action: {
+            viewModel.clearHistory()
+            showClearConfirm = false
+          }) {
+            Text("Clear")
+              .font(.system(size: 12, weight: .medium))
+              .padding(.horizontal, 12)
+              .padding(.vertical, 6)
+              .background(hoverClearConfirm ? Color.red.opacity(0.2) : Color.red.opacity(0.1))
+              .cornerRadius(6)
+          }
+          .buttonStyle(.plain)
+          .foregroundColor(.red)
+          .onHover { hoverClearConfirm = $0 }
+        }
+      }
+      .padding(12)
+    }
+  }
 
   private var filterMenu: some View {
     Button(action: { showFilterMenu.toggle() }) {

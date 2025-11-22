@@ -512,15 +512,19 @@ struct SidebarView: View {
   private var addressBar: some View {
     Button(action: { viewModel.openLocation() }) {
       HStack(spacing: 8) {
-        // Security indicator
+        // Security indicator or search icon
         if let url = viewModel.activeTab?.url {
           Image(systemName: url.scheme == "https" ? "lock.fill" : "globe")
             .font(.system(size: 10))
             .foregroundColor(url.scheme == "https" ? .green : secondaryTextColor)
+        } else {
+          Image(systemName: "magnifyingglass")
+            .font(.system(size: 10))
+            .foregroundColor(secondaryTextColor)
         }
 
-        // URL text (Domain only)
-        Text(viewModel.activeTab?.url.host ?? "google.com")
+        // URL text (Domain only) or placeholder
+        Text(viewModel.activeTab?.url.host ?? "Search or Enter URL...")
           .font(.system(size: 12))
           .foregroundColor(secondaryTextColor)
           .lineLimit(1)
