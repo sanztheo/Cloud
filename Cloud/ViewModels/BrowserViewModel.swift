@@ -77,7 +77,9 @@ class BrowserViewModel: ObservableObject {
 
   private func setupDownloadNotifications() {
     // Listen for new downloads and increment unread count
+    // Use dropFirst to skip the initial load from persistence
     downloadManager.$downloads
+      .dropFirst()
       .scan(([], [])) { (previous: ([DownloadItem], [DownloadItem]), current: [DownloadItem]) -> ([DownloadItem], [DownloadItem]) in
         return (previous.1, current)
       }

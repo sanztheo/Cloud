@@ -39,6 +39,14 @@
 - **Thèmes adaptatifs** - Interface qui s'adapte au thème du Space actif
 - **Traffic lights personnalisés** - Boutons de fenêtre intégrés à la sidebar
 
+### 📥 Gestionnaire de Téléchargements
+- **Téléchargements natifs** - Support complet des téléchargements via WebKit
+- **Progression en temps réel** - Barre de progression et pourcentage en live
+- **Aperçu des images** - Miniatures pour les fichiers images téléchargés
+- **Notifications** - Badge de notification sur l'icône Downloads
+- **Annulation facile** - Survolez le spinner pour annuler un téléchargement
+- **Gestion des fichiers** - Ouvrir, révéler dans Finder, supprimer
+
 ### ⚡ Performance
 - **WebKit optimisé** - Configuration WebKit personnalisée pour plus de rapidité
 - **Chargement asynchrone** - Favicons et ressources chargés en arrière-plan
@@ -129,13 +137,13 @@ Cloud/
 - [x] Thèmes personnalisables par Space
 - [x] Persistance des Spaces
 - [x] Multi-langues pour les résumés
+- [x] Gestionnaire de téléchargements avec progression en temps réel
+- [x] Historique de navigation avec recherche et filtres
 - [ ] Synchronisation iCloud
 - [ ] Extensions de navigateur
 - [ ] Profils utilisateurs
-- [ ] Gestionnaire de téléchargements avancé
 - [ ] Mode lecture
 - [ ] Collections de signets intelligentes
-- [ ] Historique de navigation amélioré
 
 ---
 

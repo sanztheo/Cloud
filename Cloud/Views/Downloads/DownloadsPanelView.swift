@@ -246,10 +246,11 @@ struct DownloadItemRow: View {
       titleAndInfo
       Spacer()
 
-      if isHovering || showContextMenu {
-        contextMenu
-      } else if download.status == .inProgress {
+      if download.status == .inProgress {
+        // Always show spinner/cancel button during download
         statusIndicator
+      } else if isHovering || showContextMenu {
+        contextMenu
       }
     }
     .padding(.horizontal, 12)

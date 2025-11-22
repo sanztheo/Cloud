@@ -46,17 +46,30 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate, URLSessio
   }
 
   func cancelDownload(_ downloadId: UUID) {
+    NSLog("📥 cancelDownload called for: %@", downloadId.uuidString)
+
     // Stop progress monitoring
     stopProgressMonitoring(for: downloadId)
+
+    // Get the destination URL before removing from list
+    var destinationURL: URL?
+    if let download = downloads.first(where: { $0.id == downloadId }) {
+      destinationURL = download.destinationURL
+    }
 
     activeDownloadsQueue.sync(flags: .barrier) {
       // Cancel WKDownload if exists
       if let activeDownload = activeDownloads.first(where: { $0.value == downloadId }) {
+        NSLog("📥 Cancelling WKDownload...")
         activeDownload.key.cancel()
         activeDownloads.removeValue(forKey: activeDownload.key)
+        NSLog("📥 WKDownload cancelled")
+      } else {
+        NSLog("⚠️ No WKDownload found for this ID")
       }
       // Cancel URLSession task if exists
       if let taskEntry = activeURLSessionTasks.first(where: { $0.value == downloadId }) {
+        NSLog("📥 Cancelling URLSession task...")
         taskEntry.key.cancel()
         activeURLSessionTasks.removeValue(forKey: taskEntry.key)
       }
@@ -64,8 +77,19 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate, URLSessio
 
     downloadDestinations.removeValue(forKey: downloadId)
 
+    // Delete the partial file from disk
+    if let url = destinationURL {
+      do {
+        try FileManager.default.removeItem(at: url)
+        NSLog("📥 Deleted partial file: %@", url.lastPathComponent)
+      } catch {
+        NSLog("⚠️ Could not delete partial file: %@", error.localizedDescription)
+      }
+    }
+
     DispatchQueue.main.async {
       if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+        NSLog("📥 Removing download from list")
         self.downloads.remove(at: index)
         self.saveDownloads()
       }
