@@ -13,13 +13,19 @@ struct WebViewRepresentable: NSViewRepresentable {
   @ObservedObject var viewModel: BrowserViewModel
 
   func makeNSView(context: Context) -> WKWebView {
+    NSLog("🔧 makeNSView called for tabId: %@", tabId.uuidString)
     let webView = viewModel.getWebView(for: tabId) ?? createFallbackWebView()
+
+    NSLog("🔧 Setting navigationDelegate and uiDelegate")
     webView.navigationDelegate = context.coordinator
     webView.uiDelegate = context.coordinator
 
     // Set download manager if this is CustomWKWebView
     if let customWebView = webView as? CustomWKWebView {
       customWebView.downloadManager = viewModel.downloadManager
+      NSLog("🔧 downloadManager assigned to CustomWKWebView")
+    } else {
+      NSLog("⚠️ WebView is NOT a CustomWKWebView!")
     }
 
     // Critical: Enable autoresizing to fill available space
@@ -36,7 +42,15 @@ struct WebViewRepresentable: NSViewRepresentable {
   }
 
   func updateNSView(_ nsView: WKWebView, context: Context) {
-    // WebView updates are handled through the view model
+    // CRITICAL: Always ensure delegates are set - they may have been lost
+    if nsView.navigationDelegate == nil {
+      print("⚠️ navigationDelegate was nil, reassigning...")
+      nsView.navigationDelegate = context.coordinator
+    }
+    if nsView.uiDelegate == nil {
+      print("⚠️ uiDelegate was nil, reassigning...")
+      nsView.uiDelegate = context.coordinator
+    }
   }
 
   func makeCoordinator() -> Coordinator {
@@ -111,9 +125,15 @@ struct WebViewRepresentable: NSViewRepresentable {
       decidePolicyFor navigationResponse: WKNavigationResponse,
       decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
     ) {
+      let mimeType = navigationResponse.response.mimeType ?? "unknown"
+      let canShow = navigationResponse.canShowMIMEType
+
+      print("📥 decidePolicyFor navigationResponse - MIME: \(mimeType), canShow: \(canShow)")
+
       // Check if the response can be displayed in the web view
-      if !navigationResponse.canShowMIMEType {
+      if !canShow {
         // Non-displayable MIME type, trigger download
+        print("📥 → Triggering download (can't show MIME type)")
         decisionHandler(.download)
       } else {
         // Normal content, display it
@@ -126,6 +146,7 @@ struct WebViewRepresentable: NSViewRepresentable {
       navigationAction: WKNavigationAction,
       didBecome download: WKDownload
     ) {
+      print("📥 navigationAction didBecome download - URL: \(download.originalRequest?.url?.absoluteString ?? "unknown")")
       // Set the download manager as the delegate for this download
       download.delegate = parent.viewModel.downloadManager
       // Track this download in the manager
@@ -137,6 +158,7 @@ struct WebViewRepresentable: NSViewRepresentable {
       navigationResponse: WKNavigationResponse,
       didBecome download: WKDownload
     ) {
+      print("📥 navigationResponse didBecome download - URL: \(download.originalRequest?.url?.absoluteString ?? "unknown")")
       // Set the download manager as the delegate for this download
       download.delegate = parent.viewModel.downloadManager
       // Track this download in the manager
@@ -169,8 +191,12 @@ struct WebViewRepresentable: NSViewRepresentable {
       preferences: WKWebpagePreferences,
       decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
     ) {
+      let urlString = navigationAction.request.url?.absoluteString ?? "unknown"
+      print("📥 decidePolicyFor navigationAction - URL: \(urlString), shouldPerformDownload: \(navigationAction.shouldPerformDownload)")
+
       // Check if this is a download action (e.g., from context menu "Download Image")
       if navigationAction.shouldPerformDownload {
+        print("📥 → shouldPerformDownload is true, triggering .download policy")
         decisionHandler(.download, preferences)
         return
       }

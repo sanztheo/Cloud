@@ -548,7 +548,10 @@ class BrowserViewModel: ObservableObject {
   func toggleSpotlight() {
     isSpotlightVisible.toggle()
     if isSpotlightVisible {
+      // Always reset search query and selection when opening via Cmd+T
       searchQuery = ""
+      spotlightSelectedIndex = 0
+      suggestions = []
     }
   }
 

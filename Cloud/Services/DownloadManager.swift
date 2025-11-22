@@ -31,6 +31,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
       // Generate a UUID for this download (we'll match it when we get the delegate callback)
       let downloadId = UUID()
       activeDownloads[download] = downloadId
+      NSLog("📥 trackDownload: Added download to activeDownloads, count: %d", activeDownloads.count)
     }
   }
 
@@ -92,6 +93,8 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     suggestedFilename: String,
     completionHandler: @escaping (URL?) -> Void
   ) {
+    print("📥 DownloadManager.decideDestinationUsing called - filename: \(suggestedFilename)")
+
     // IMPORTANT: Must call completionHandler synchronously to avoid WebKit crash
     // Using runModal() instead of begin() to ensure completion handler is always called
     let savePanel = NSSavePanel()
@@ -102,6 +105,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     let result = savePanel.runModal()
 
     if result == .OK, let url = savePanel.url {
+      print("📥 Save location selected: \(url.path)")
       let sourceURL = response.url ?? URL(fileURLWithPath: "/")
       let downloadItem = DownloadItem(
         filename: url.lastPathComponent,
@@ -118,16 +122,21 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
 
       completionHandler(url)
     } else {
+      print("📥 Save cancelled by user")
       completionHandler(nil)
     }
   }
 
   func downloadDidFinish(_ download: WKDownload) {
+    print("📥 DownloadManager.downloadDidFinish called")
     var downloadId: UUID?
     activeDownloadsQueue.sync(flags: .barrier) {
       downloadId = activeDownloads.removeValue(forKey: download)
     }
-    guard let downloadId = downloadId else { return }
+    guard let downloadId = downloadId else {
+      print("📥 Warning: downloadDidFinish called but no matching download ID found")
+      return
+    }
 
     DispatchQueue.main.async {
       if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
@@ -135,6 +144,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
         self.downloads[index].endTime = Date()
         self.downloads[index].downloadedBytes = self.downloads[index].fileSize
         self.saveDownloads()
+        print("📥 Download completed successfully: \(self.downloads[index].filename)")
       }
     }
   }

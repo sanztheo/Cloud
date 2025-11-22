@@ -135,8 +135,9 @@ struct BrowserView: View {
       GeometryReader { geometry in
         ScrollView(.vertical, showsIndicators: viewModel.isSummarizing) {
           VStack(spacing: 24) {
-            // WebView - Persistent instance that resizes
+            // WebView - Use .id() to force SwiftUI to recreate view when tab changes
             WebViewRepresentable(tabId: tabId, viewModel: viewModel)
+              .id(tabId)  // CRITICAL: Forces view recreation on tab change
               .frame(
                 width: viewModel.isSummarizing ? 600 : geometry.size.width,
                 height: viewModel.isSummarizing ? 400 : geometry.size.height
