@@ -539,8 +539,11 @@ class BrowserViewModel: ObservableObject {
       ))
     }
 
+    // Filter tabs by active space
+    let spaceTabs = tabs.filter { $0.spaceId == activeSpaceId }
+
     if query.isEmpty {
-      results.append(contentsOf: tabs.map { tab in
+      results.append(contentsOf: spaceTabs.map { tab in
         SearchResult(
           type: .tab,
           title: tab.title,
@@ -600,8 +603,8 @@ class BrowserViewModel: ObservableObject {
         ))
     }
 
-    // 5. Search tabs
-    for tab in tabs
+    // 5. Search tabs (only in current space)
+    for tab in spaceTabs
     where tab.title.lowercased().contains(lowercasedQuery)
       || tab.url.absoluteString.lowercased().contains(lowercasedQuery)
     {

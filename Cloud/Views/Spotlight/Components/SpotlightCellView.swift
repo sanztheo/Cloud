@@ -148,11 +148,49 @@ class SpotlightCellView: NSTableCellView {
     }
     // 3. Fallback to system icons
     else {
-      let (bgColor, iconName, color) = iconConfig(for: result.type)
-      iconBackground.layer?.backgroundColor = bgColor.cgColor
-      iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
-      iconImageView.contentTintColor = color
-      iconColor = color
+      // Check for specific commands
+      if result.type == .command && result.title == "Summarize Page" {
+        // Custom Raycast-style AI icon
+        iconBackground.layer?.backgroundColor = NSColor.clear.cgColor  // Clear background for gradient layer
+
+        // Remove any existing gradient layer to avoid stacking
+        iconBackground.layer?.sublayers?.forEach {
+          if $0 is CAGradientLayer { $0.removeFromSuperlayer() }
+        }
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+          NSColor(red: 0.447, green: 0.706, blue: 1.0, alpha: 1.0).cgColor,  // #72B4FF
+          NSColor(red: 0.145, green: 0.545, blue: 1.0, alpha: 1.0).cgColor,  // #258BFF
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = iconBackground.bounds
+        gradientLayer.cornerRadius = 10  // "Pas full" -> Rounded square
+        gradientLayer.borderWidth = 2
+        gradientLayer.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+
+        iconBackground.layer?.insertSublayer(gradientLayer, at: 0)
+
+        // Ensure the container also has the correct corner radius if it clips
+        iconBackground.layer?.cornerRadius = 10
+
+        iconImageView.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
+        iconImageView.contentTintColor = .white
+        iconColor = .white
+      } else {
+        // Standard icon config
+        // Remove any custom gradient if present
+        iconBackground.layer?.sublayers?.forEach {
+          if $0 is CAGradientLayer { $0.removeFromSuperlayer() }
+        }
+
+        let (bgColor, iconName, color) = iconConfig(for: result.type)
+        iconBackground.layer?.backgroundColor = bgColor.cgColor
+        iconImageView.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
+        iconImageView.contentTintColor = color
+        iconColor = color
+      }
     }
 
     // Arc-style blue/teal selection background

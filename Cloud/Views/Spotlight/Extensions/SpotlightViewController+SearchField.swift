@@ -73,16 +73,10 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     let query = searchField.stringValue
 
-    // If query is empty, just close
-    guard !query.isEmpty else {
-      close()
-      return
-    }
-
     // Get selected row, default to first row (0) if nothing selected
     let selectedRow = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
 
-    // If we have results and a valid selection, use it
+    // If we have results, use the selected one
     if !searchResults.isEmpty && selectedRow < searchResults.count {
       viewModel.selectSearchResult(searchResults[selectedRow])
       close()
@@ -90,24 +84,26 @@ extension SpotlightViewController: NSSearchFieldDelegate {
     }
 
     // Fallback: create synthetic result for direct navigation/search
-    var urlString = query
-    if !urlString.contains("://") {
-      if urlString.contains(".") && !urlString.contains(" ") {
-        urlString = "https://\(urlString)"
-      } else {
-        urlString =
-          "https://www.google.com/search?q=\(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)"
+    if !query.isEmpty {
+      var urlString = query
+      if !urlString.contains("://") {
+        if urlString.contains(".") && !urlString.contains(" ") {
+          urlString = "https://\(urlString)"
+        } else {
+          urlString =
+            "https://www.google.com/search?q=\(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)"
+        }
       }
-    }
 
-    if let url = URL(string: urlString) {
-      let syntheticResult = SearchResult(
-        type: urlString.contains("google.com/search") ? .suggestion : .website,
-        title: query,
-        subtitle: urlString.contains("google.com/search") ? "Search Google" : "Open website",
-        url: url
-      )
-      viewModel.selectSearchResult(syntheticResult)
+      if let url = URL(string: urlString) {
+        let syntheticResult = SearchResult(
+          type: urlString.contains("google.com/search") ? .suggestion : .website,
+          title: query,
+          subtitle: urlString.contains("google.com/search") ? "Search Google" : "Open website",
+          url: url
+        )
+        viewModel.selectSearchResult(syntheticResult)
+      }
     }
     close()
   }
