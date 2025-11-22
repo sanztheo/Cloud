@@ -91,13 +91,44 @@ extension SpotlightViewController {
     iconImageView.translatesAutoresizingMaskIntoConstraints = false
     searchContainer.addSubview(iconImageView)
 
+    // Ask badge (appears in Ask About WebPage mode)
+    askBadgeContainer = NSView()
+    askBadgeContainer.wantsLayer = true
+    askBadgeContainer.layer?.cornerRadius = 10
+    askBadgeContainer.layer?.backgroundColor = NSColor.systemPurple.withAlphaComponent(0.18).cgColor
+    askBadgeContainer.translatesAutoresizingMaskIntoConstraints = false
+    askBadgeContainer.isHidden = true
+    askBadgeContainer.alphaValue = 0
+    searchContainer.addSubview(askBadgeContainer)
+
+    askBadgeLabel = NSTextField(labelWithString: "[Page]")
+    askBadgeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+    askBadgeLabel.textColor = NSColor.systemPurple
+    askBadgeLabel.alignment = .center
+    askBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
+    askBadgeContainer.addSubview(askBadgeLabel)
+
+    searchFieldLeadingToIcon = searchField.leadingAnchor.constraint(
+      equalTo: iconImageView.trailingAnchor, constant: 12)
+    searchFieldLeadingToBadge = searchField.leadingAnchor.constraint(
+      equalTo: askBadgeContainer.trailingAnchor, constant: 12)
+    searchFieldLeadingToIcon.isActive = true
+    searchFieldLeadingToBadge.isActive = false
+
     NSLayoutConstraint.activate([
       iconImageView.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 20),
       iconImageView.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
       iconImageView.widthAnchor.constraint(equalToConstant: 24),
       iconImageView.heightAnchor.constraint(equalToConstant: 24),
 
-      searchField.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 12),
+      askBadgeContainer.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 12),
+      askBadgeContainer.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
+
+      askBadgeLabel.leadingAnchor.constraint(equalTo: askBadgeContainer.leadingAnchor, constant: 10),
+      askBadgeLabel.trailingAnchor.constraint(equalTo: askBadgeContainer.trailingAnchor, constant: -10),
+      askBadgeLabel.topAnchor.constraint(equalTo: askBadgeContainer.topAnchor, constant: 6),
+      askBadgeLabel.bottomAnchor.constraint(equalTo: askBadgeContainer.bottomAnchor, constant: -6),
+
       searchField.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -20),
       searchField.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
       searchField.heightAnchor.constraint(equalToConstant: 32),
@@ -126,13 +157,18 @@ extension SpotlightViewController {
 
       scrollView.heightAnchor.constraint(lessThanOrEqualToConstant: 360),
     ])
+
+    updateAskBadge()
   }
 
   @objc func searchFieldChanged() {
     viewModel.searchQuery = searchField.stringValue
+    if viewModel.isAskMode {
+      viewModel.askQuestion = searchField.stringValue
+    }
     updateResults()
     updateIcon()
-    tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+    updateAskBadge()
   }
 
   func updateResults() {

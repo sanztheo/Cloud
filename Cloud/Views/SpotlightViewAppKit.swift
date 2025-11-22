@@ -20,6 +20,7 @@ struct SpotlightViewAppKit: NSViewControllerRepresentable {
     // Sync search field with viewModel (fixes stale query bug when reopening)
     nsViewController.searchField.stringValue = viewModel.searchQuery
     nsViewController.updateIcon()
+    nsViewController.updateAskBadge()
 
     // Update results when viewModel changes (e.g. suggestions loaded)
     nsViewController.updateResults()

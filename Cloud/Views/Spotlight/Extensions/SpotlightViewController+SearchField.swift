@@ -73,12 +73,39 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     let query = searchField.stringValue
 
+    // If Ask mode is active, bypass normal navigation and send question to OpenAI
+    if viewModel.isAskMode {
+      let question = query.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !question.isEmpty else { return }
+
+      viewModel.askQuestion = question
+      viewModel.beginAskAboutPage(with: question)
+      close()
+      return
+    }
+
     // Get selected row, default to first row (0) if nothing selected
     let selectedRow = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
 
     // If we have results, use the selected one
     if !searchResults.isEmpty && selectedRow < searchResults.count {
-      viewModel.selectSearchResult(searchResults[selectedRow])
+      let selectedResult = searchResults[selectedRow]
+
+      // Special handling: "Ask About WebPage" should keep Spotlight open to capture the question
+      if selectedResult.type == .command && selectedResult.title == "Ask About WebPage" {
+        viewModel.selectSearchResult(selectedResult)
+        searchField.stringValue = ""
+        viewModel.searchQuery = ""
+        viewModel.askQuestion = ""
+        updateResults()
+        updateAskBadge()
+        updateIcon()
+        view.window?.makeFirstResponder(searchField)
+        searchField.currentEditor()?.selectAll(nil)
+        return
+      }
+
+      viewModel.selectSearchResult(selectedResult)
       close()
       return
     }

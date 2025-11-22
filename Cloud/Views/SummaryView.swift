@@ -58,7 +58,7 @@ struct SummaryView: View {
           .font(.title2)
           .foregroundStyle(textColor)
 
-        Text("Page Summary")
+        Text(viewModel.askQuestion.isEmpty ? "Page Summary" : "Page Answer")
           .font(.title2)
           .fontWeight(.semibold)
           .foregroundStyle(textColor)
@@ -66,6 +66,12 @@ struct SummaryView: View {
         Spacer()
       }
       .padding(.bottom, 8)
+
+      if !viewModel.askQuestion.isEmpty {
+        Text("Q: \(viewModel.askQuestion)")
+          .font(.callout)
+          .foregroundStyle(textColor.opacity(0.75))
+      }
 
       // Markdown content
       if !viewModel.summaryText.isEmpty {
@@ -103,6 +109,14 @@ struct SummaryView: View {
                 .foregroundStyle(textColor.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .animation(.easeInOut, value: viewModel.summarizingStatus)
+            }
+
+            if !viewModel.askQuestion.isEmpty {
+              Text("Q: \(viewModel.askQuestion)")
+                .font(.callout)
+                .foregroundStyle(textColor.opacity(0.65))
+                .multilineTextAlignment(.center)
+                .padding(.top, 4)
             }
           }
         }
@@ -179,7 +193,7 @@ struct SummaryView: View {
           .foregroundColor(.green)
           .font(.callout)
 
-        Text("Summary Complete")
+        Text(viewModel.askQuestion.isEmpty ? "Summary Complete" : "Answer Ready")
           .font(.callout)
           .foregroundStyle(textColor.opacity(0.7))
       }

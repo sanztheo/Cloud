@@ -12,6 +12,10 @@ class SpotlightViewController: NSViewController {
 
   var searchField: NSSearchField!
   var iconImageView: NSImageView!
+  var askBadgeContainer: NSView!
+  var askBadgeLabel: NSTextField!
+  var searchFieldLeadingToIcon: NSLayoutConstraint!
+  var searchFieldLeadingToBadge: NSLayoutConstraint!
   var tableView: SpotlightTableView!
   var scrollView: NSScrollView!
   var containerView: NSVisualEffectView!
@@ -39,6 +43,7 @@ class SpotlightViewController: NSViewController {
 
     // Update icon based on context
     updateIcon()
+    updateAskBadge()
 
     // Auto-focus search field and select all text
     view.window?.makeFirstResponder(searchField)
@@ -69,6 +74,24 @@ class SpotlightViewController: NSViewController {
         systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
       iconImageView.contentTintColor = .secondaryLabelColor
     }
+  }
+
+  func updateAskBadge() {
+    guard askBadgeContainer != nil,
+      searchFieldLeadingToIcon != nil,
+      searchFieldLeadingToBadge != nil else { return }
+
+    let shouldShowBadge = viewModel?.isAskMode ?? false
+
+    askBadgeContainer.isHidden = !shouldShowBadge
+    askBadgeContainer.alphaValue = shouldShowBadge ? 1 : 0
+    searchField.placeholderString =
+      shouldShowBadge ? "Ask something about this page..." : "Search or enter URL..."
+
+    searchFieldLeadingToIcon.isActive = !shouldShowBadge
+    searchFieldLeadingToBadge.isActive = shouldShowBadge
+
+    view.layoutSubtreeIfNeeded()
   }
 
   func close() {

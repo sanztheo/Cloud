@@ -179,6 +179,34 @@ class SpotlightCellView: NSTableCellView {
         iconImageView.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
         iconImageView.contentTintColor = .white
         iconColor = .white
+      } else if result.type == .command && result.title == "Ask About WebPage" {
+        // Distinct badge for Ask flow
+        iconBackground.layer?.backgroundColor = NSColor.clear.cgColor
+
+        // Remove any existing gradient layer
+        iconBackground.layer?.sublayers?.forEach {
+          if $0 is CAGradientLayer { $0.removeFromSuperlayer() }
+        }
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+          NSColor.systemPurple.withAlphaComponent(0.9).cgColor,
+          NSColor.systemBlue.withAlphaComponent(0.9).cgColor,
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 36, height: 36)
+        gradientLayer.cornerRadius = 10
+        gradientLayer.borderWidth = 2
+        gradientLayer.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+
+        iconBackground.layer?.insertSublayer(gradientLayer, at: 0)
+        iconBackground.layer?.cornerRadius = 10
+
+        iconImageView.image = NSImage(
+          systemSymbolName: "text.bubble.fill", accessibilityDescription: nil)
+        iconImageView.contentTintColor = .white
+        iconColor = .white
       } else {
         // Standard icon config
         // Remove any custom gradient if present

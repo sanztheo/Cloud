@@ -22,6 +22,8 @@ class BrowserViewModel: ObservableObject {
   @Published var isSidebarCollapsed: Bool = false
   @Published var isHistoryPanelVisible: Bool = false
   @Published var searchQuery: String = ""
+  @Published var isAskMode: Bool = false  // Spotlight "Ask About WebPage" mode
+  @Published var askQuestion: String = ""  // User-provided question for the active page
   @Published var addressBarText: String = ""
   @Published var spotlightSelectedIndex: Int = 0
   @Published var transitionDirection: Edge = .trailing
@@ -104,7 +106,7 @@ class BrowserViewModel: ObservableObject {
       .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
       .removeDuplicates()
       .flatMap { [weak self] query -> AnyPublisher<[String], Never> in
-        guard let self = self, !query.isEmpty else {
+        guard let self = self, !query.isEmpty, !self.isAskMode else {
           return Just([]).eraseToAnyPublisher()
         }
         return self.suggestionsService.fetchSuggestions(for: query)
@@ -575,19 +577,18 @@ class BrowserViewModel: ObservableObject {
     isSpotlightVisible.toggle()
     if isSpotlightVisible {
       // Always reset search query and selection when opening via Cmd+T
-      searchQuery = ""
-      spotlightSelectedIndex = 0
-      suggestions = []
+      resetSpotlightInputState()
     }
   }
 
   func hideSpotlight() {
     isSpotlightVisible = false
-    searchQuery = ""
-    spotlightSelectedIndex = 0
+    resetSpotlightInputState()
   }
 
   func openLocation() {
+    isAskMode = false
+    askQuestion = ""
     if let url = activeTab?.url {
       searchQuery = url.absoluteString
     } else {
@@ -596,8 +597,31 @@ class BrowserViewModel: ObservableObject {
     isSpotlightVisible = true
   }
 
+  private func resetSpotlightInputState() {
+    // Always reset search query and selection when opening/closing Spotlight
+    searchQuery = ""
+    spotlightSelectedIndex = 0
+    suggestions = []
+    isAskMode = false
+    askQuestion = ""
+  }
+
+  private func activateAskMode() {
+    isSpotlightVisible = true
+    isAskMode = true
+    askQuestion = ""
+    searchQuery = ""
+    spotlightSelectedIndex = 0
+    suggestions = []
+  }
+
   func searchResults(for query: String) -> [SearchResult] {
     var results: [SearchResult] = []
+
+    // When asking about the current page, we hide regular search results
+    if isAskMode {
+      return results
+    }
 
     // Add "Summarize Page" command if there's an active tab with content
     if let activeTab = tabs.first(where: { $0.id == activeTabId }),
@@ -614,6 +638,24 @@ class BrowserViewModel: ObservableObject {
           tabId: activeTabId,
           favicon: nil
         ))
+
+      let askQueryMatches =
+        query.isEmpty
+          || query.localizedCaseInsensitiveContains("ask")
+          || query.localizedCaseInsensitiveContains("question")
+          || query.localizedCaseInsensitiveContains("page")
+
+      if askQueryMatches {
+        results.append(
+          SearchResult(
+            type: .command,
+            title: "Ask About WebPage",
+            subtitle: "Ask AI a question about this page",
+            url: nil,
+            tabId: activeTabId,
+            favicon: nil
+          ))
+      }
     }
 
     // Filter tabs by active space
@@ -719,8 +761,6 @@ class BrowserViewModel: ObservableObject {
   }
 
   func selectSearchResult(_ result: SearchResult) {
-    isSpotlightVisible = false
-
     print(
       "🔍 Spotlight: selectSearchResult called with type: \(result.type), title: \(result.title)")
 
@@ -731,17 +771,23 @@ class BrowserViewModel: ObservableObject {
         print("  → Switching to existing tab")
         selectTab(tabId)
       }
+      isSpotlightVisible = false
     case .bookmark, .history, .suggestion, .website:
       // Create NEW tab for bookmarks, history, suggestions, and websites (Arc-style behavior)
       if let url = result.url {
         print("  → Creating new tab for URL: \(url)")
         createNewTab(url: url)
       }
+      isSpotlightVisible = false
     case .command:
-      // Handle Summarize Page command
-      hideSpotlight()
-      summaryTask = Task {
-        await summarizePage()
+      if result.title == "Ask About WebPage" {
+        activateAskMode()
+      } else {
+        // Handle Summarize Page command
+        hideSpotlight()
+        summaryTask = Task {
+          await summarizePage()
+        }
       }
     }
   }
@@ -755,6 +801,9 @@ class BrowserViewModel: ObservableObject {
       summaryError = "No active page to summarize"
       return
     }
+
+    isAskMode = false
+    askQuestion = ""
 
     // Reset cancellation flag
     isSummaryCancelled = false
@@ -838,11 +887,104 @@ class BrowserViewModel: ObservableObject {
   }
 
   @MainActor
+  func askAboutPage(question: String) async {
+    let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !trimmedQuestion.isEmpty else {
+      summaryError = "Please enter a question about the page."
+      return
+    }
+
+    guard let activeTab = tabs.first(where: { $0.id == activeTabId }),
+      let webView = getWebView(for: activeTab.id)
+    else {
+      summaryError = "No active page to analyze"
+      return
+    }
+
+    // Exit ask mode once the request starts (prevents stale badge)
+    isAskMode = false
+    askQuestion = trimmedQuestion
+
+    // Reset cancellation flag
+    isSummaryCancelled = false
+
+    // Reset state
+    isSummarizing = true
+    summaryText = ""
+    isSummaryComplete = false
+    summaryError = nil
+    summarizingStatus = "Extracting page content..."
+
+    do {
+      // Check for cancellation
+      guard !isSummaryCancelled else { return }
+
+      // Extract page content using JavaScript
+      let pageContent =
+        try await webView.evaluateJavaScript("document.body.innerText") as? String ?? ""
+
+      guard !isSummaryCancelled else { return }
+
+      guard !pageContent.isEmpty else {
+        throw NSError(
+          domain: "BrowserViewModel", code: 1,
+          userInfo: [NSLocalizedDescriptionKey: "Page has no text content"])
+      }
+
+      // Clean content (remove excessive whitespace)
+      let cleanedContent =
+        pageContent
+        .components(separatedBy: .whitespacesAndNewlines)
+        .filter { !$0.isEmpty }
+        .joined(separator: " ")
+
+      // Check for cancellation
+      guard !isSummaryCancelled else { return }
+
+      // Generate answer via API
+      summarizingStatus = "Answering your question..."
+      let stream = try await openAIService.streamAskAboutPage(
+        content: cleanedContent, question: trimmedQuestion)
+
+      // Process streaming response with cancellation checks
+      for try await chunk in stream {
+        guard !isSummaryCancelled else { return }
+        summaryText += chunk
+      }
+
+      // Check for cancellation
+      guard !isSummaryCancelled else { return }
+
+      isSummaryComplete = true
+
+    } catch let error as OpenAIError {
+      if !isSummaryCancelled {
+        summaryError = error.localizedDescription
+        isSummarizing = false
+      }
+    } catch {
+      if !isSummaryCancelled {
+        summaryError = "Failed to generate answer: \(error.localizedDescription)"
+        isSummarizing = false
+      }
+    }
+  }
+
+  func beginAskAboutPage(with question: String) {
+    summaryTask = Task { [weak self] in
+      guard let self = self else { return }
+      await self.askAboutPage(question: question)
+    }
+  }
+
+  @MainActor
   func restorePage() {
     // Set cancellation flag to stop any ongoing summary generation
     isSummaryCancelled = true
     summaryTask?.cancel()
     summaryTask = nil
+    askQuestion = ""
 
     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
       isSummarizing = false

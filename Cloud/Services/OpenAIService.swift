@@ -48,90 +48,18 @@ class OpenAIService {
   /// - Returns: An async stream that yields summary text chunks progressively
   func streamSummary(for text: String) async throws -> AsyncThrowingStream<String, Error> {
     let request = try buildRequest(for: text)
+    return makeStream(for: request)
+  }
 
-    return AsyncThrowingStream { continuation in
-      Task {
-        do {
-          let (bytes, response) = try await URLSession.shared.bytes(for: request)
-
-          // Check HTTP response
-          guard let httpResponse = response as? HTTPURLResponse else {
-            continuation.finish(throwing: OpenAIError.invalidResponse("No HTTP response"))
-            return
-          }
-
-          // Handle HTTP errors
-          switch httpResponse.statusCode {
-          case 200:
-            break  // Success, continue processing
-          case 401:
-            continuation.finish(throwing: OpenAIError.missingAPIKey)
-            return
-          case 429:
-            continuation.finish(throwing: OpenAIError.rateLimitExceeded)
-            return
-          case 400...499:
-            continuation.finish(
-              throwing: OpenAIError.invalidResponse("Client error: \(httpResponse.statusCode)"))
-            return
-          case 500...599:
-            continuation.finish(
-              throwing: OpenAIError.networkError(
-                NSError(
-                  domain: "OpenAI", code: httpResponse.statusCode,
-                  userInfo: [NSLocalizedDescriptionKey: "Server error"])))
-            return
-          default:
-            continuation.finish(
-              throwing: OpenAIError.invalidResponse(
-                "Unexpected status code: \(httpResponse.statusCode)"))
-            return
-          }
-
-          // Process streaming response
-          var buffer = ""
-
-          for try await line in bytes.lines {
-            // Handle SSE format
-            if line.hasPrefix("data: ") {
-              let data = String(line.dropFirst(6))
-
-              // Check for stream termination
-              if data == "[DONE]" {
-                continuation.finish()
-                return
-              }
-
-              // Parse JSON chunk
-              if let content = try self.parseStreamLine(data) {
-                continuation.yield(content)
-              }
-            }
-            // Handle potential buffered data
-            else if !line.isEmpty && !line.hasPrefix(":") {
-              buffer += line
-              if buffer.hasPrefix("data: ") {
-                let data = String(buffer.dropFirst(6))
-                if let content = try self.parseStreamLine(data) {
-                  continuation.yield(content)
-                }
-                buffer = ""
-              }
-            }
-          }
-
-          continuation.finish()
-
-        } catch {
-          // Handle errors during streaming
-          if error is OpenAIError {
-            continuation.finish(throwing: error)
-          } else {
-            continuation.finish(throwing: OpenAIError.networkError(error))
-          }
-        }
-      }
-    }
+  /// Stream a Q&A response about the provided page content
+  /// - Parameters:
+  ///   - content: Cleaned page text
+  ///   - question: User question to answer using only the provided content
+  func streamAskAboutPage(content: String, question: String) async throws
+    -> AsyncThrowingStream<String, Error>
+  {
+    let request = try buildAskRequest(content: content, question: question)
+    return makeStream(for: request)
   }
 
   // MARK: - Private Methods
@@ -151,15 +79,7 @@ class OpenAIService {
     let apiKey = try getAPIKey()
 
     // Prepare text (truncate if necessary)
-    let processedText: String
-    var truncationNote = ""
-
-    if text.count > maxInputLength {
-      processedText = String(text.prefix(maxInputLength))
-      truncationNote = "\n\nNote: Content was truncated to \(maxInputLength) characters."
-    } else {
-      processedText = text
-    }
+    let (processedText, truncationNote) = prepareContent(text)
 
     // Get selected language from UserDefaults
     let selectedLanguage = UserDefaults.standard.string(forKey: "summary_language") ?? "English"
@@ -226,6 +146,153 @@ class OpenAIService {
     }
 
     return request
+  }
+
+  private func buildAskRequest(content: String, question: String) throws -> URLRequest {
+    let apiKey = try getAPIKey()
+    let (processedText, truncationNote) = prepareContent(content)
+
+    let selectedLanguage = UserDefaults.standard.string(forKey: "summary_language") ?? "English"
+    let languageInstruction =
+      selectedLanguage == "English"
+      ? ""
+      : " Provide the answer in \(selectedLanguage)."
+
+    let requestBody: [String: Any] = [
+      "model": model,
+      "messages": [
+        [
+          "role": "system",
+          "content":
+            """
+          You are an expert research assistant. Answer the user's question **only** using the provided web page text. If the answer is not present, say so explicitly.
+
+          - Be concise and use Markdown for formatting.
+          - Quote short phrases from the page when helpful.
+          - Do not invent information beyond the supplied content.\(languageInstruction)
+          """,
+        ],
+        [
+          "role": "user",
+          "content":
+            """
+          Page content:
+          \(processedText)
+          \(truncationNote)
+
+          Question: \(question)
+
+          Reply with the best possible answer based only on the page content.
+          """,
+        ],
+      ],
+      "stream": true,
+      "max_completion_tokens": maxCompletionTokens,
+      "reasoning_effort": reasoningEffort,
+    ]
+
+    guard let url = URL(string: endpoint) else {
+      throw OpenAIError.invalidResponse("Invalid endpoint URL")
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+    do {
+      request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+    } catch {
+      throw OpenAIError.invalidJSON(error)
+    }
+
+    return request
+  }
+
+  private func prepareContent(_ text: String) -> (String, String) {
+    if text.count > maxInputLength {
+      let processed = String(text.prefix(maxInputLength))
+      let note = "\n\nNote: Content was truncated to \(maxInputLength) characters."
+      return (processed, note)
+    }
+    return (text, "")
+  }
+
+  private func makeStream(for request: URLRequest) -> AsyncThrowingStream<String, Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let (bytes, response) = try await URLSession.shared.bytes(for: request)
+
+          guard let httpResponse = response as? HTTPURLResponse else {
+            continuation.finish(throwing: OpenAIError.invalidResponse("No HTTP response"))
+            return
+          }
+
+          switch httpResponse.statusCode {
+          case 200:
+            break
+          case 401:
+            continuation.finish(throwing: OpenAIError.missingAPIKey)
+            return
+          case 429:
+            continuation.finish(throwing: OpenAIError.rateLimitExceeded)
+            return
+          case 400...499:
+            continuation.finish(
+              throwing: OpenAIError.invalidResponse("Client error: \(httpResponse.statusCode)"))
+            return
+          case 500...599:
+            continuation.finish(
+              throwing: OpenAIError.networkError(
+                NSError(
+                  domain: "OpenAI", code: httpResponse.statusCode,
+                  userInfo: [NSLocalizedDescriptionKey: "Server error"])))
+            return
+          default:
+            continuation.finish(
+              throwing: OpenAIError.invalidResponse(
+                "Unexpected status code: \(httpResponse.statusCode)"))
+            return
+          }
+
+          var buffer = ""
+
+          for try await line in bytes.lines {
+            if line.hasPrefix("data: ") {
+              let data = String(line.dropFirst(6))
+
+              if data == "[DONE]" {
+                continuation.finish()
+                return
+              }
+
+              if let content = try self.parseStreamLine(data) {
+                continuation.yield(content)
+              }
+            } else if !line.isEmpty && !line.hasPrefix(":") {
+              buffer += line
+              if buffer.hasPrefix("data: ") {
+                let data = String(buffer.dropFirst(6))
+                if let content = try self.parseStreamLine(data) {
+                  continuation.yield(content)
+                }
+                buffer = ""
+              }
+            }
+          }
+
+          continuation.finish()
+
+        } catch {
+          if error is OpenAIError {
+            continuation.finish(throwing: error)
+          } else {
+            continuation.finish(throwing: OpenAIError.networkError(error))
+          }
+        }
+      }
+    }
   }
 
   /// Parse a single line from the SSE stream
