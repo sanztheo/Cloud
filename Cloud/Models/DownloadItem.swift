@@ -16,7 +16,7 @@ struct DownloadItem: Identifiable, Codable {
   let id: UUID
   let filename: String
   let url: URL
-  let destinationURL: URL
+  var destinationURL: URL
   let fileSize: Int64
   var downloadedBytes: Int64
   var status: DownloadStatus

@@ -13,13 +13,14 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
 
   private let downloadsDirectory: URL
   private var activeDownloads: [WKDownload: UUID] = [:]
+  private var activeURLSessionTasks: [UUID: URLSessionDownloadTask] = [:]
   private let activeDownloadsQueue = DispatchQueue(label: "cloud.downloads.active", attributes: .concurrent)
   private let persistenceKey = "cloud_downloads"
 
   override init() {
-    let fileManager = FileManager.default
-    let urls = fileManager.urls(for: .downloadsDirectory, in: .userDomainMask)
-    self.downloadsDirectory = urls[0]
+    // Get the real user Downloads folder
+    self.downloadsDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
+    NSLog("📥 Downloads directory: %@", downloadsDirectory.path)
     super.init()
     loadDownloads()
   }
@@ -28,38 +29,31 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
 
   func trackDownload(_ download: WKDownload) {
     activeDownloadsQueue.sync(flags: .barrier) {
-      // Generate a UUID for this download (we'll match it when we get the delegate callback)
       let downloadId = UUID()
       activeDownloads[download] = downloadId
       NSLog("📥 trackDownload: Added download to activeDownloads, count: %d", activeDownloads.count)
     }
   }
 
-  func startDownload(url: URL, suggestedFilename: String, downloadSize: Int64 = 0) {
-    let destinationURL = downloadsDirectory.appendingPathComponent(suggestedFilename)
-    let download = DownloadItem(
-      filename: suggestedFilename,
-      url: url,
-      destinationURL: destinationURL,
-      fileSize: downloadSize,
-      status: .inProgress
-    )
-    downloads.insert(download, at: 0)
-    saveDownloads()
-  }
-
   func cancelDownload(_ downloadId: UUID) {
-    // Cancel the active WKDownload if exists
     activeDownloadsQueue.sync(flags: .barrier) {
+      // Cancel WKDownload if exists
       if let activeDownload = activeDownloads.first(where: { $0.value == downloadId }) {
         activeDownload.key.cancel()
         activeDownloads.removeValue(forKey: activeDownload.key)
       }
+      // Cancel URLSession task if exists
+      if let task = activeURLSessionTasks[downloadId] {
+        task.cancel()
+        activeURLSessionTasks.removeValue(forKey: downloadId)
+      }
     }
 
-    if let index = downloads.firstIndex(where: { $0.id == downloadId }) {
-      downloads.remove(at: index)
-      saveDownloads()
+    DispatchQueue.main.async {
+      if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+        self.downloads.remove(at: index)
+        self.saveDownloads()
+      }
     }
   }
 
@@ -85,7 +79,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     saveDownloads()
   }
 
-  // MARK: - WKDownloadDelegate
+  // MARK: - WKDownloadDelegate (Native WebKit Downloads)
 
   func download(
     _ download: WKDownload,
@@ -93,48 +87,42 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     suggestedFilename: String,
     completionHandler: @escaping (URL?) -> Void
   ) {
-    print("📥 DownloadManager.decideDestinationUsing called - filename: \(suggestedFilename)")
+    NSLog("📥 WKDownloadDelegate.decideDestinationUsing - filename: %@", suggestedFilename)
 
-    // IMPORTANT: Must call completionHandler synchronously to avoid WebKit crash
-    // Using runModal() instead of begin() to ensure completion handler is always called
-    let savePanel = NSSavePanel()
-    savePanel.nameFieldStringValue = suggestedFilename
-    savePanel.directoryURL = downloadsDirectory
-    savePanel.canCreateDirectories = true
+    // Generate unique filename
+    let destinationURL = generateUniqueDestinationURL(for: suggestedFilename)
 
-    let result = savePanel.runModal()
+    // Create download item
+    let sourceURL = response.url ?? URL(fileURLWithPath: "/")
+    let downloadItem = DownloadItem(
+      filename: destinationURL.lastPathComponent,
+      url: sourceURL,
+      destinationURL: destinationURL,
+      fileSize: response.expectedContentLength,
+      status: .inProgress
+    )
 
-    if result == .OK, let url = savePanel.url {
-      print("📥 Save location selected: \(url.path)")
-      let sourceURL = response.url ?? URL(fileURLWithPath: "/")
-      let downloadItem = DownloadItem(
-        filename: url.lastPathComponent,
-        url: sourceURL,
-        destinationURL: url,
-        fileSize: response.expectedContentLength
-      )
-
-      downloads.insert(downloadItem, at: 0)
-      activeDownloadsQueue.sync(flags: .barrier) {
-        activeDownloads[download] = downloadItem.id
-      }
-      saveDownloads()
-
-      completionHandler(url)
-    } else {
-      print("📥 Save cancelled by user")
-      completionHandler(nil)
+    DispatchQueue.main.async {
+      self.downloads.insert(downloadItem, at: 0)
+      self.saveDownloads()
     }
+
+    activeDownloadsQueue.sync(flags: .barrier) {
+      activeDownloads[download] = downloadItem.id
+    }
+
+    NSLog("📥 Will download to: %@", destinationURL.path)
+    completionHandler(destinationURL)
   }
 
   func downloadDidFinish(_ download: WKDownload) {
-    print("📥 DownloadManager.downloadDidFinish called")
+    NSLog("📥 WKDownloadDelegate.downloadDidFinish")
     var downloadId: UUID?
     activeDownloadsQueue.sync(flags: .barrier) {
       downloadId = activeDownloads.removeValue(forKey: download)
     }
     guard let downloadId = downloadId else {
-      print("📥 Warning: downloadDidFinish called but no matching download ID found")
+      NSLog("⚠️ downloadDidFinish: No matching download ID found")
       return
     }
 
@@ -144,7 +132,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
         self.downloads[index].endTime = Date()
         self.downloads[index].downloadedBytes = self.downloads[index].fileSize
         self.saveDownloads()
-        print("📥 Download completed successfully: \(self.downloads[index].filename)")
+        NSLog("📥 Download completed: %@", self.downloads[index].filename)
       }
     }
   }
@@ -154,6 +142,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     didFailWithError error: Error,
     resumeData: Data?
   ) {
+    NSLog("📥 WKDownloadDelegate.didFailWithError: %@", error.localizedDescription)
     var downloadId: UUID?
     activeDownloadsQueue.sync(flags: .barrier) {
       downloadId = activeDownloads.removeValue(forKey: download)
@@ -168,6 +157,31 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
         self.saveDownloads()
       }
     }
+  }
+
+  // MARK: - Helper Methods
+
+  private func generateUniqueDestinationURL(for filename: String) -> URL {
+    var destinationURL = downloadsDirectory.appendingPathComponent(filename)
+
+    // If file exists, add a number suffix
+    var counter = 1
+    let fileManager = FileManager.default
+    let nameWithoutExtension = destinationURL.deletingPathExtension().lastPathComponent
+    let fileExtension = destinationURL.pathExtension
+
+    while fileManager.fileExists(atPath: destinationURL.path) {
+      let newName: String
+      if fileExtension.isEmpty {
+        newName = "\(nameWithoutExtension) (\(counter))"
+      } else {
+        newName = "\(nameWithoutExtension) (\(counter)).\(fileExtension)"
+      }
+      destinationURL = downloadsDirectory.appendingPathComponent(newName)
+      counter += 1
+    }
+
+    return destinationURL
   }
 
   // MARK: - Persistence
@@ -185,7 +199,7 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     }
   }
 
-  // MARK: - Helpers
+  // MARK: - Finder Integration
 
   func openDownloadsFolder() {
     NSWorkspace.shared.open(downloadsDirectory)
