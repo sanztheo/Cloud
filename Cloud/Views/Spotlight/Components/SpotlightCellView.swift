@@ -120,9 +120,12 @@ class SpotlightCellView: NSTableCellView {
     backgroundLayer.frame = bounds.insetBy(dx: 10, dy: 2)
   }
 
-  func configure(with result: SearchResult, isSelected: Bool) {
+  func configure(with result: SearchResult, isSelected: Bool, themeColor: NSColor? = nil) {
     titleLabel.stringValue = result.title
     subtitleLabel.stringValue = result.subtitle
+
+    // Use space theme color or fallback to Arc blue
+    let selectionColor = themeColor ?? NSColor(red: 74 / 255.0, green: 124 / 255.0, blue: 142 / 255.0, alpha: 1.0)
 
     // Configure icon
     let iconColor: NSColor
@@ -222,9 +225,6 @@ class SpotlightCellView: NSTableCellView {
       }
     }
 
-    // Arc-style blue/teal selection background
-    let arcBlue = NSColor(red: 74 / 255.0, green: 124 / 255.0, blue: 142 / 255.0, alpha: 1.0)
-
     // Configure badge - show "Switch to Tab" for existing tabs only
     if result.type == .tab {
       badgeContainer.isHidden = false
@@ -234,18 +234,18 @@ class SpotlightCellView: NSTableCellView {
         badgeContainer.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.15).cgColor
         badgeLabel.textColor = .white
       } else {
-        badgeContainer.layer?.backgroundColor = arcBlue.withAlphaComponent(0.2).cgColor
-        badgeLabel.textColor = arcBlue
+        badgeContainer.layer?.backgroundColor = selectionColor.withAlphaComponent(0.2).cgColor
+        badgeLabel.textColor = selectionColor
       }
     } else {
       badgeContainer.isHidden = true
     }
 
-    // Arc-style selection highlight
+    // Selection highlight with space theme color
     if isSelected {
       NSAnimationContext.runAnimationGroup { context in
         context.duration = 0.15
-        backgroundLayer.backgroundColor = arcBlue.cgColor
+        backgroundLayer.backgroundColor = selectionColor.cgColor
         titleLabel.textColor = .white
         subtitleLabel.textColor = NSColor.white.withAlphaComponent(0.7)
         iconImageView.contentTintColor = .white

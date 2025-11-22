@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import SwiftUI
 
 // MARK: - NSTableViewDelegate
 extension SpotlightViewController: NSTableViewDelegate {
@@ -21,7 +22,14 @@ extension SpotlightViewController: NSTableViewDelegate {
 
     let result = searchResults[row]
     let isSelected = tableView.selectedRow == row
-    cellView?.configure(with: result, isSelected: isSelected)
+
+    // Get theme color from active space
+    let themeColor: NSColor? = {
+      guard let space = viewModel.activeSpace else { return nil }
+      return NSColor(space.color)
+    }()
+
+    cellView?.configure(with: result, isSelected: isSelected, themeColor: themeColor)
 
     return cellView
   }

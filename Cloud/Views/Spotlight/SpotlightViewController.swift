@@ -106,34 +106,39 @@ class SpotlightViewController: NSViewController {
   }
 
   func animateAskBadgeGlow() {
-    guard let layer = askBadgeContainer.layer else { return }
+    guard let layer = containerView.layer else { return }
 
-    // Create glow effect
-    let glowColor = NSColor.systemPurple.withAlphaComponent(0.8).cgColor
+    // Store original shadow properties
+    let originalShadowColor = layer.shadowColor
+    let originalShadowOpacity = layer.shadowOpacity
+    let originalShadowRadius = layer.shadowRadius
 
-    // Shadow glow animation
-    let shadowAnimation = CABasicAnimation(keyPath: "shadowOpacity")
-    shadowAnimation.fromValue = 0
-    shadowAnimation.toValue = 1
-    shadowAnimation.duration = 0.2
-    shadowAnimation.autoreverses = true
-    shadowAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+    // Create purple glow effect on the Spotlight container
+    let glowColor = NSColor.systemPurple.cgColor
 
-    let shadowRadiusAnimation = CABasicAnimation(keyPath: "shadowRadius")
-    shadowRadiusAnimation.fromValue = 0
-    shadowRadiusAnimation.toValue = 15
-    shadowRadiusAnimation.duration = 0.2
-    shadowRadiusAnimation.autoreverses = true
-    shadowRadiusAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-
-    // Apply shadow properties
+    // Temporarily set to glow state
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
     layer.shadowColor = glowColor
+    layer.shadowOpacity = 1.0
+    layer.shadowRadius = 60
     layer.shadowOffset = .zero
-    layer.shadowOpacity = 0
+    CATransaction.commit()
 
-    // Run animations
-    layer.add(shadowAnimation, forKey: "glowOpacity")
-    layer.add(shadowRadiusAnimation, forKey: "glowRadius")
+    // Animate back to original
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      NSAnimationContext.runAnimationGroup { context in
+        context.duration = 0.4
+        context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+
+        CATransaction.begin()
+        layer.shadowColor = originalShadowColor
+        layer.shadowOpacity = originalShadowOpacity
+        layer.shadowRadius = originalShadowRadius
+        layer.shadowOffset = CGSize(width: 0, height: -15)
+        CATransaction.commit()
+      }
+    }
   }
 
   func exitAskMode() {
