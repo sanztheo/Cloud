@@ -190,8 +190,8 @@ class SpotlightCellView: NSTableCellView {
 
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
-          NSColor.systemPurple.withAlphaComponent(0.9).cgColor,
-          NSColor.systemBlue.withAlphaComponent(0.9).cgColor,
+          NSColor(red: 0.447, green: 0.706, blue: 1.0, alpha: 1.0).cgColor,  // #72B4FF
+          NSColor(red: 0.145, green: 0.545, blue: 1.0, alpha: 1.0).cgColor,  // #258BFF
         ]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint = CGPoint(x: 1, y: 1)
