@@ -7,7 +7,7 @@
   ![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)
   ![Platform](https://img.shields.io/badge/Platform-macOS-blue.svg)
   ![SwiftUI](https://img.shields.io/badge/SwiftUI-Yes-green.svg)
-  ![License](https://img.shields.io/badge/License-Proprietary-red.svg)
+  ![License](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-red.svg)
 </div>
 
 ---
@@ -161,11 +161,15 @@ Les contributions sont les bienvenues ! N'hésitez pas à :
 
 ## 📝 License
 
-Ce projet est sous licence **Propriétaire**. Tous droits réservés.
+Ce projet est sous licence **[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)**.
 
-Toute copie, modification ou distribution de ce code nécessite une autorisation écrite préalable.
+| Autorisé | Interdit |
+|----------|----------|
+| ✅ Partager (non-commercial) | ❌ Usage commercial |
+| ✅ Créditer l'auteur | ❌ Modifier le code |
+| | ❌ Distribuer des versions modifiées |
 
-📧 **Contact pour autorisation:** sanztheopro@gmail.com
+📧 **Contact pour permissions spéciales:** sanztheopro@gmail.com
 
 Voir le fichier `LICENSE` pour plus de détails.
 
