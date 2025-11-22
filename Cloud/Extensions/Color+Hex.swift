@@ -48,6 +48,35 @@ extension Color {
     return String(format: "#%02X%02X%02X", red, green, blue)
   }
 
+  /// Interpolate between two colors
+  /// - Parameters:
+  ///   - other: The target color to interpolate towards
+  ///   - progress: The interpolation progress (0.0 = self, 1.0 = other)
+  /// - Returns: A new Color interpolated between self and other
+  func interpolate(to other: Color, progress: CGFloat) -> Color {
+    let clampedProgress = max(0, min(1, progress))
+
+    let fromNS = NSColor(self).usingColorSpace(.sRGB) ?? NSColor(self)
+    let toNS = NSColor(other).usingColorSpace(.sRGB) ?? NSColor(other)
+
+    let fromRed = fromNS.redComponent
+    let fromGreen = fromNS.greenComponent
+    let fromBlue = fromNS.blueComponent
+    let fromAlpha = fromNS.alphaComponent
+
+    let toRed = toNS.redComponent
+    let toGreen = toNS.greenComponent
+    let toBlue = toNS.blueComponent
+    let toAlpha = toNS.alphaComponent
+
+    return Color(
+      red: Double(fromRed + (toRed - fromRed) * clampedProgress),
+      green: Double(fromGreen + (toGreen - fromGreen) * clampedProgress),
+      blue: Double(fromBlue + (toBlue - fromBlue) * clampedProgress),
+      opacity: Double(fromAlpha + (toAlpha - fromAlpha) * clampedProgress)
+    )
+  }
+
   /// Adjust the brightness of a color
   /// - Parameter amount: The amount to adjust (-1.0 to 1.0). Negative values darken, positive values brighten.
   /// - Returns: A new Color with adjusted brightness

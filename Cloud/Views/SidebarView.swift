@@ -69,6 +69,41 @@ struct SidebarView: View {
     return baseOffset + viewModel.spaceSwipeDragOffset
   }
 
+  // MARK: - Interpolated Background Color
+  private var interpolatedBackgroundColor: Color {
+    let currentColor = AppColors.sidebarBackground(for: viewModel.activeSpace?.theme)
+    let dragOffset = viewModel.spaceSwipeDragOffset
+    let sidebarWidth: CGFloat = 240
+
+    // No drag, return current color
+    guard abs(dragOffset) > 0 else { return currentColor }
+
+    // Calculate progress (0 to 1)
+    let progress = abs(dragOffset) / sidebarWidth
+
+    // Determine target color based on drag direction
+    let targetColor: Color
+    if dragOffset > 0 {
+      // Dragging right -> going to previous space
+      if let prevId = previousSpaceId,
+         let prevSpace = viewModel.spaces.first(where: { $0.id == prevId }) {
+        targetColor = AppColors.sidebarBackground(for: prevSpace.theme)
+      } else {
+        return currentColor
+      }
+    } else {
+      // Dragging left -> going to next space
+      if let nextId = nextSpaceId,
+         let nextSpace = viewModel.spaces.first(where: { $0.id == nextId }) {
+        targetColor = AppColors.sidebarBackground(for: nextSpace.theme)
+      } else {
+        return currentColor
+      }
+    }
+
+    return currentColor.interpolate(to: targetColor, progress: progress)
+  }
+
   @ViewBuilder
   private func tabsListContent(for spaceId: UUID) -> some View {
     ScrollView {
@@ -145,7 +180,7 @@ struct SidebarView: View {
     .frame(width: viewModel.isSidebarCollapsed ? 0 : 240)
     .background(
       ZStack {
-        AppColors.sidebarBackground(for: viewModel.activeSpace?.theme)
+        interpolatedBackgroundColor
         SwipeGestureView(
           onSwipeLeft: {
             viewModel.switchToNextSpace()
