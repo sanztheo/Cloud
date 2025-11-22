@@ -203,6 +203,12 @@ struct DownloadItemRow: View {
   @State private var hoverOpen = false
   @State private var hoverReveal = false
   @State private var hoverRemove = false
+  @State private var thumbnail: NSImage?
+
+  private var isImageFile: Bool {
+    let ext = (download.filename as NSString).pathExtension.lowercased()
+    return ["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "heic"].contains(ext)
+  }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -214,11 +220,28 @@ struct DownloadItemRow: View {
     .contentShape(Rectangle())
     .onHover { isHovering = $0 }
     .background(isHovering ? Color.black.opacity(0.04) : Color.clear)
+    .onAppear { loadThumbnail() }
+    .onChange(of: download.status) { _, _ in loadThumbnail() }
+  }
+
+  private func loadThumbnail() {
+    guard isImageFile, download.status == .completed else {
+      thumbnail = nil
+      return
+    }
+
+    DispatchQueue.global(qos: .userInitiated).async {
+      if let image = NSImage(contentsOf: download.destinationURL) {
+        DispatchQueue.main.async {
+          self.thumbnail = image
+        }
+      }
+    }
   }
 
   private var rowContent: some View {
     HStack(spacing: 10) {
-      fileIconView
+      thumbnailView
       titleAndInfo
       Spacer()
 
@@ -232,11 +255,29 @@ struct DownloadItemRow: View {
     .padding(.vertical, 8)
   }
 
+  @ViewBuilder
+  private var thumbnailView: some View {
+    if isImageFile, let thumbnail = thumbnail {
+      Image(nsImage: thumbnail)
+        .resizable()
+        .aspectRatio(contentMode: .fill)
+        .frame(width: 44, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    } else {
+      fileIconView
+    }
+  }
+
   private var fileIconView: some View {
-    Image(systemName: iconForFileName(download.filename))
-      .font(.system(size: 14))
-      .foregroundColor(secondaryTextColor)
-      .frame(width: 16, height: 16)
+    ZStack {
+      RoundedRectangle(cornerRadius: 8)
+        .fill(Color.black.opacity(0.08))
+        .frame(width: 44, height: 44)
+
+      Image(systemName: iconForFileName(download.filename))
+        .font(.system(size: 18))
+        .foregroundColor(secondaryTextColor)
+    }
   }
 
   private var titleAndInfo: some View {
