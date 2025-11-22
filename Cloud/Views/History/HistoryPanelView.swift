@@ -13,6 +13,7 @@ struct HistoryPanelView: View {
   @Binding var isPresented: Bool
   @State private var searchText = ""
   @State private var selectedFilter: HistoryFilter = .all
+  var showsHeader: Bool = true
 
   enum HistoryFilter: String, CaseIterable {
     case all = "All"
@@ -54,7 +55,9 @@ struct HistoryPanelView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      headerView
+      if showsHeader {
+        headerView
+      }
       searchFieldView
       historyListView
     }

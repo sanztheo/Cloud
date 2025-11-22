@@ -551,9 +551,9 @@ struct SidebarView: View {
 
       HStack(spacing: 6) {
         Spacer()
-          // History button
+          // Archive button (History + Downloads)
           Button(action: { viewModel.toggleHistoryPanel() }) {
-            Image(systemName: "clock.arrow.circlepath")
+            Image(systemName: "archivebox")
               .font(.system(size: 12))
               .foregroundColor(textColor)
               .frame(width: 28, height: 28)
@@ -562,7 +562,7 @@ struct SidebarView: View {
           }
           .buttonStyle(.plain)
           .onHover { hovering in isHoveringHistory = hovering }
-          .help("History")
+          .help("Archive (History & Downloads)")
 
           Divider()
             .frame(height: 20)

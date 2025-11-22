@@ -48,16 +48,17 @@ struct BrowserView: View {
     ZStack {
       // Main content
       HStack(spacing: 0) {
-        // Sidebar or History Panel
+        // Sidebar or Archive Panel
         if !viewModel.isSidebarCollapsed {
           if viewModel.isHistoryPanelVisible {
-            // History panel (expanded sidebar)
-            HistoryPanelView(
+            // Archive panel (History + Downloads)
+            ArchivePanelView(
               viewModel: viewModel,
+              downloadManager: viewModel.downloadManager,
               theme: viewModel.activeSpace?.theme,
               isPresented: $viewModel.isHistoryPanelVisible
             )
-            .frame(width: 380)
+            .frame(width: 400)
             .transition(.move(edge: .leading).combined(with: .opacity))
           } else {
             // Normal sidebar

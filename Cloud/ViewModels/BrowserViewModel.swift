@@ -34,6 +34,9 @@ class BrowserViewModel: ObservableObject {
   @Published var summarizingStatus: String = "Summarizing page..."
   @Published var summaryError: String? = nil
 
+  // MARK: - Download Manager
+  @Published var downloadManager = DownloadManager()
+
   // MARK: - WebView Management
   private var webViews: [UUID: WKWebView] = [:]
   private var cancellables = Set<AnyCancellable>()
