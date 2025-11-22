@@ -222,18 +222,23 @@ struct SidebarView: View {
         interpolatedBackgroundColor
         SwipeGestureView(
           onSwipeLeft: {
-            viewModel.switchToNextSpace()
+            viewModel.switchToNextSpace(animated: false)
           },
           onSwipeRight: {
-            viewModel.switchToPreviousSpace()
+            viewModel.switchToPreviousSpace(animated: false)
           },
           onDragOffsetChanged: { offset in
             viewModel.spaceSwipeDragOffset = offset
           },
-          onDragEnded: { _ in
-            // Animate back to zero (snap back or after space switch)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+          onDragEnded: { _, didSwipe in
+            if didSwipe {
+              // Swipe réussi: reset immédiat sans animation
               viewModel.spaceSwipeDragOffset = 0
+            } else {
+              // Swipe annulé: animation de snap-back
+              withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                viewModel.spaceSwipeDragOffset = 0
+              }
             }
           },
           sidebarWidth: 240

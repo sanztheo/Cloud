@@ -143,6 +143,11 @@ extension SpotlightViewController {
     // Update scroll view visibility
     scrollView.isHidden = searchResults.isEmpty
 
+    // Always select first row when there are results (Arc/Spotlight behavior)
+    if !searchResults.isEmpty {
+      tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+    }
+
     // Update container height
     let baseHeight: CGFloat = 68
     let resultsHeight: CGFloat =

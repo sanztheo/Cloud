@@ -12,7 +12,7 @@ struct SwipeGestureView: NSViewRepresentable {
   var onSwipeLeft: () -> Void
   var onSwipeRight: () -> Void
   var onDragOffsetChanged: ((CGFloat) -> Void)?
-  var onDragEnded: ((CGFloat) -> Void)?
+  var onDragEnded: ((_ offset: CGFloat, _ didSwipe: Bool) -> Void)?
   var sidebarWidth: CGFloat = 240
 
   func makeNSView(context: Context) -> SwipeListeningView {
@@ -38,7 +38,7 @@ class SwipeListeningView: NSView {
   var onSwipeLeft: (() -> Void)?
   var onSwipeRight: (() -> Void)?
   var onDragOffsetChanged: ((CGFloat) -> Void)?
-  var onDragEnded: ((CGFloat) -> Void)?
+  var onDragEnded: ((_ offset: CGFloat, _ didSwipe: Bool) -> Void)?
   var sidebarWidth: CGFloat = 240
 
   private var monitor: Any?
@@ -101,21 +101,26 @@ class SwipeListeningView: NSView {
 
         // Calculate the percentage of swipe
         let swipePercent = abs(totalDeltaX) / sidebarWidth
+        let didSwipe = swipePercent >= swipeThresholdPercent
+        let finalOffset = totalDeltaX
 
-        if swipePercent >= swipeThresholdPercent {
-          // Exceeded threshold - switch space
-          if totalDeltaX < 0 {
-            // Swiped left -> next space
-            onSwipeLeft?()
-          } else {
-            // Swiped right -> previous space
-            onSwipeRight?()
-          }
-        }
-
-        // Always notify that drag ended (for snap-back animation)
         DispatchQueue.main.async { [weak self] in
-          self?.onDragEnded?(self?.totalDeltaX ?? 0)
+          guard let self = self else { return }
+
+          if didSwipe {
+            // Reset offset FIRST (no animation needed since we're switching)
+            self.onDragEnded?(finalOffset, true)
+
+            // Then switch space
+            if finalOffset < 0 {
+              self.onSwipeLeft?()
+            } else {
+              self.onSwipeRight?()
+            }
+          } else {
+            // Snap back with animation
+            self.onDragEnded?(finalOffset, false)
+          }
         }
 
         totalDeltaX = 0

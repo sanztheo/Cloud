@@ -432,26 +432,34 @@ class BrowserViewModel: ObservableObject {
     }
   }
 
-  func switchToNextSpace() {
+  func switchToNextSpace(animated: Bool = true) {
     guard let currentId = activeSpaceId,
       let currentIndex = spaces.firstIndex(where: { $0.id == currentId })
     else { return }
 
     transitionDirection = .trailing
     let nextIndex = (currentIndex + 1) % spaces.count
-    withAnimation(.easeInOut(duration: 0.25)) {
+    if animated {
+      withAnimation(.easeInOut(duration: 0.25)) {
+        selectSpace(spaces[nextIndex].id)
+      }
+    } else {
       selectSpace(spaces[nextIndex].id)
     }
   }
 
-  func switchToPreviousSpace() {
+  func switchToPreviousSpace(animated: Bool = true) {
     guard let currentId = activeSpaceId,
       let currentIndex = spaces.firstIndex(where: { $0.id == currentId })
     else { return }
 
     transitionDirection = .leading
     let prevIndex = (currentIndex - 1 + spaces.count) % spaces.count
-    withAnimation(.easeInOut(duration: 0.25)) {
+    if animated {
+      withAnimation(.easeInOut(duration: 0.25)) {
+        selectSpace(spaces[prevIndex].id)
+      }
+    } else {
       selectSpace(spaces[prevIndex].id)
     }
   }
@@ -547,7 +555,19 @@ class BrowserViewModel: ObservableObject {
 
     let lowercasedQuery = query.lowercased()
 
-    // 1. Check if query looks like a URL (contains dot and no spaces)
+    // 1. ALWAYS add search suggestion first (allows instant Enter)
+    let searchUrl = URL(
+      string: "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
+    )
+    results.append(
+      SearchResult(
+        type: .suggestion,
+        title: query,
+        subtitle: "Search Google",
+        url: searchUrl
+      ))
+
+    // 2. Check if query looks like a URL (contains dot and no spaces)
     if query.contains(".") && !query.contains(" ") {
       let urlString = query.hasPrefix("http") ? query : "https://\(query)"
       if let url = URL(string: urlString) {
@@ -561,24 +581,12 @@ class BrowserViewModel: ObservableObject {
       }
     }
 
-    // 2. Add search suggestions (Google suggestions)
-    if !suggestions.isEmpty {
-      results.append(contentsOf: suggestions)
-    } else {
-      // Fallback to generic search if no suggestions yet
-      results.append(
-        SearchResult(
-          type: .suggestion,
-          title: "Search Google for \"\(query)\"",
-          subtitle: "google.com",
-          url: URL(
-            string:
-              "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
-          )
-        ))
+    // 3. Add Google suggestions (skip if matches the first search result)
+    for suggestion in suggestions where suggestion.title.lowercased() != lowercasedQuery {
+      results.append(suggestion)
     }
 
-    // 3. Search history
+    // 4. Search history
     for entry in history.prefix(20)
     where entry.title.lowercased().contains(lowercasedQuery)
       || entry.url.absoluteString.lowercased().contains(lowercasedQuery)
@@ -592,7 +600,7 @@ class BrowserViewModel: ObservableObject {
         ))
     }
 
-    // 4. Search tabs
+    // 5. Search tabs
     for tab in tabs
     where tab.title.lowercased().contains(lowercasedQuery)
       || tab.url.absoluteString.lowercased().contains(lowercasedQuery)
@@ -608,7 +616,7 @@ class BrowserViewModel: ObservableObject {
         ))
     }
 
-    // 5. Search bookmarks
+    // 6. Search bookmarks
     for bookmark in bookmarks
     where bookmark.title.lowercased().contains(lowercasedQuery)
       || bookmark.url.absoluteString.lowercased().contains(lowercasedQuery)

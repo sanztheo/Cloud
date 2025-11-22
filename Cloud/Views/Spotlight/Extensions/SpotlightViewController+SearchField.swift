@@ -73,34 +73,42 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     let query = searchField.stringValue
 
-    // Always create a new tab when opening from Spotlight (Arc-style)
-    if searchResults.isEmpty || (query.contains(".") && !query.contains(" ")) {
-      // Create synthetic result to ensure new tab creation
-      var urlString = query
-      if !urlString.contains("://") {
-        if urlString.contains(".") && !urlString.contains(" ") {
-          urlString = "https://\(urlString)"
-        } else {
-          urlString =
-            "https://www.google.com/search?q=\(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)"
-        }
-      }
-
-      if let url = URL(string: urlString) {
-        let syntheticResult = SearchResult(
-          type: .website,
-          title: query,
-          subtitle: "Open website",
-          url: url
-        )
-        viewModel.selectSearchResult(syntheticResult)
-      }
+    // If query is empty, just close
+    guard !query.isEmpty else {
       close()
-    } else {
-      let selectedRow = tableView.selectedRow
-      if selectedRow >= 0 && selectedRow < searchResults.count {
-        viewModel.selectSearchResult(searchResults[selectedRow])
+      return
+    }
+
+    // Get selected row, default to first row (0) if nothing selected
+    let selectedRow = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
+
+    // If we have results and a valid selection, use it
+    if !searchResults.isEmpty && selectedRow < searchResults.count {
+      viewModel.selectSearchResult(searchResults[selectedRow])
+      close()
+      return
+    }
+
+    // Fallback: create synthetic result for direct navigation/search
+    var urlString = query
+    if !urlString.contains("://") {
+      if urlString.contains(".") && !urlString.contains(" ") {
+        urlString = "https://\(urlString)"
+      } else {
+        urlString =
+          "https://www.google.com/search?q=\(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)"
       }
     }
+
+    if let url = URL(string: urlString) {
+      let syntheticResult = SearchResult(
+        type: urlString.contains("google.com/search") ? .suggestion : .website,
+        title: query,
+        subtitle: urlString.contains("google.com/search") ? "Search Google" : "Open website",
+        url: url
+      )
+      viewModel.selectSearchResult(syntheticResult)
+    }
+    close()
   }
 }

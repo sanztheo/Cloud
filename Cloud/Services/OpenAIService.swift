@@ -37,7 +37,7 @@ class OpenAIService {
   private let endpoint = "https://api.openai.com/v1/chat/completions"
   private let model = "gpt-5-nano"
   private let maxInputLength = 100_000
-  private let maxCompletionTokens = 1000
+  private let maxCompletionTokens = 500
   private let reasoningEffort = "low"  // "low" | "medium" | "high"
   private let apiKeyUserDefaultsKey = "openai_api_key"
 
@@ -178,24 +178,24 @@ class OpenAIService {
           "role": "system",
           "content":
             """
-            You are an expert content summarizer. Create clear, well-structured summaries using Markdown.
+          You are an expert content summarizer. Create clear, well-structured summaries using Markdown.
 
-            ## Formatting Rules:
-            - Use **## Section Title** for main sections
-            - Use **### Subsection** for subsections when needed
-            - Use **bold** for key terms, names, and important concepts
-            - Use *italic* for emphasis or technical terms
-            - Use bullet points (- ) for lists of items, features, or steps
-            - Keep paragraphs short and scannable
-            - Start with a brief overview, then dive into details
+          ## Formatting Rules:
+          - Use **## Section Title** for main sections
+          - Use **### Subsection** for subsections when needed
+          - Use **bold** for key terms, names, and important concepts
+          - Use *italic* for emphasis or technical terms
+          - Use bullet points (- ) for lists of items, features, or steps
+          - Keep paragraphs short and scannable
+          - Start with a brief overview, then dive into details
 
-            ## Structure:
-            1. Brief overview (1-2 sentences)
-            2. Key points organized by theme
-            3. Important details or takeaways
+          ## Structure:
+          1. Brief overview (1-2 sentences)
+          2. Key points organized by theme
+          3. Important details or takeaways
 
-            Be concise but comprehensive. Focus on what matters most.\(languageInstruction)
-            """,
+          Be concise but comprehensive. Focus on what matters most.\(languageInstruction)
+          """,
         ],
         [
           "role": "user",
