@@ -339,12 +339,12 @@ struct SidebarView: View {
       .frame(width: 44, height: 44)
       .background(
         viewModel.activeTabId == tab.id
-          ? Color.accentColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor)
+          ? Color.black.opacity(0.2) : Color.black.opacity(0.1)
       )
       .clipShape(RoundedRectangle(cornerRadius: 8))
       .overlay(
         RoundedRectangle(cornerRadius: 8)
-          .stroke(viewModel.activeTabId == tab.id ? Color.accentColor : Color.clear, lineWidth: 2)
+          .stroke(viewModel.activeTabId == tab.id ? Color.black.opacity(0.3) : Color.clear, lineWidth: 2)
       )
     }
     .buttonStyle(.plain)
@@ -392,7 +392,7 @@ struct SidebarView: View {
               .font(.system(size: 8, weight: .bold))
               .foregroundColor(secondaryTextColor)
               .frame(width: 16, height: 16)
-              .background(Color(nsColor: .controlBackgroundColor))
+              .background(Color.black.opacity(0.2))
               .clipShape(Circle())
           }
           .buttonStyle(.plain)
@@ -404,8 +404,8 @@ struct SidebarView: View {
         RoundedRectangle(cornerRadius: 6)
           .fill(
             viewModel.activeTabId == tab.id
-              ? Color.accentColor.opacity(0.2)
-              : (hoveredTabId == tab.id ? Color(nsColor: .controlBackgroundColor) : Color.clear))
+              ? Color.black.opacity(0.2)
+              : (hoveredTabId == tab.id ? Color.black.opacity(0.1) : Color.clear))
       )
     }
     .buttonStyle(.plain)
