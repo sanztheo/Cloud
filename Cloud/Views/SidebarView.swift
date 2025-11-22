@@ -262,24 +262,22 @@ struct SidebarView: View {
   // MARK: - Space Button
   private func spaceButton(_ space: Space) -> some View {
     Button(action: { viewModel.selectSpace(space.id) }) {
-      VStack(spacing: 4) {
-        Text(space.icon)
-          .font(.system(size: 18))
-          .frame(width: 40, height: 40)
-          .background(
-            viewModel.activeSpaceId == space.id
-              ? space.color.opacity(0.3)
-              : (hoveredSpaceId == space.id ? Color.black.opacity(0.2) : Color.clear)
-          )
-          .clipShape(RoundedRectangle(cornerRadius: 10))
-          .overlay(
-            RoundedRectangle(cornerRadius: 10)
-              .stroke(
-                viewModel.activeSpaceId == space.id ? Color.black.opacity(0.3) : Color.clear,
-                lineWidth: 2
-              )
-          )
-      }
+      Text(space.icon)
+        .font(.system(size: 14))
+        .frame(width: 28, height: 28)
+        .background(
+          viewModel.activeSpaceId == space.id
+            ? space.color.opacity(0.3)
+            : (hoveredSpaceId == space.id ? Color.black.opacity(0.2) : Color.clear)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+          RoundedRectangle(cornerRadius: 6)
+            .stroke(
+              viewModel.activeSpaceId == space.id ? Color.black.opacity(0.3) : Color.clear,
+              lineWidth: 1.5
+            )
+        )
     }
     .buttonStyle(.plain)
     .onHover { isHovering in
@@ -547,23 +545,23 @@ struct SidebarView: View {
     VStack(spacing: 8) {
       Divider()
 
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 8) {
+      HStack(spacing: 6) {
+        Spacer()
           // History button
           Button(action: { viewModel.toggleHistoryPanel() }) {
             Image(systemName: "clock.arrow.circlepath")
-              .font(.system(size: 16))
+              .font(.system(size: 12))
               .foregroundColor(textColor)
-              .frame(width: 40, height: 40)
+              .frame(width: 28, height: 28)
               .background(isHoveringHistory ? Color.black.opacity(0.2) : Color.clear)
-              .clipShape(RoundedRectangle(cornerRadius: 10))
+              .clipShape(RoundedRectangle(cornerRadius: 6))
           }
           .buttonStyle(.plain)
           .onHover { hovering in isHoveringHistory = hovering }
           .help("History")
 
           Divider()
-            .frame(height: 24)
+            .frame(height: 20)
 
           ForEach(viewModel.spaces) { space in
             spaceButton(space)
@@ -572,11 +570,11 @@ struct SidebarView: View {
           // Add space button
           Button(action: { isAddingSpace = true }) {
             Image(systemName: "plus")
-              .font(.system(size: 14, weight: .medium))
+              .font(.system(size: 11, weight: .medium))
               .foregroundColor(secondaryTextColor)
-              .frame(width: 40, height: 40)
+              .frame(width: 28, height: 28)
               .background(isHoveringAddSpace ? Color.black.opacity(0.2) : Color.clear)
-              .clipShape(RoundedRectangle(cornerRadius: 10))
+              .clipShape(RoundedRectangle(cornerRadius: 6))
           }
           .buttonStyle(.plain)
           .onHover { isHovering in
@@ -588,10 +586,10 @@ struct SidebarView: View {
               viewModel: viewModel
             )
           }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        Spacer()
       }
+      .padding(.horizontal, 10)
+      .padding(.vertical, 6)
     }
   }
 }

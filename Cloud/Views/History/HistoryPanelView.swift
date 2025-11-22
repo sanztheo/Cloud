@@ -56,6 +56,10 @@ struct HistoryPanelView: View {
 
   private var headerView: some View {
     VStack(spacing: 0) {
+      // Spacer pour éviter les boutons Apple (close, minimize, maximize)
+      Spacer()
+        .frame(height: 36)
+
       HStack(spacing: 12) {
         backButton
         Spacer()
@@ -70,7 +74,6 @@ struct HistoryPanelView: View {
 
       Divider().foregroundColor(Color.black.opacity(0.15))
     }
-    .background(Color.black.opacity(0.1))
   }
 
   private var backButton: some View {
@@ -170,7 +173,7 @@ struct HistoryPanelView: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(backgroundColor)
+    .background(Color.black.opacity(0.1))
   }
 
   private func historyScrollView(groups: [(date: String, entries: [HistoryEntry])]) -> some View {
@@ -183,7 +186,7 @@ struct HistoryPanelView: View {
       }
       .padding(.vertical, 8)
     }
-    .background(backgroundColor)
+    .background(Color.black.opacity(0.1))
   }
 
   private func historyGroupView(group: (date: String, entries: [HistoryEntry]), isLast: Bool) -> some View {
