@@ -175,19 +175,20 @@ class BrowserViewModel: ObservableObject {
   }
 
   func closeTab(_ tabId: UUID) {
-    guard let index = tabs.firstIndex(where: { $0.id == tabId }) else { return }
+    guard let tab = tabs.first(where: { $0.id == tabId }) else { return }
+    let closedTabSpaceId = tab.spaceId
 
     // Remove WebView
     webViews.removeValue(forKey: tabId)
-    tabs.remove(at: index)
+    tabs.removeAll { $0.id == tabId }
 
-    // Update active tab
+    // Update active tab - only select tabs from the SAME space
     if activeTabId == tabId {
-      if tabs.isEmpty {
-        activeTabId = nil
+      let tabsInSameSpace = tabs.filter { $0.spaceId == closedTabSpaceId }
+      if let nextTab = tabsInSameSpace.first {
+        activeTabId = nextTab.id
       } else {
-        let newIndex = min(index, tabs.count - 1)
-        activeTabId = tabs[newIndex].id
+        activeTabId = nil
       }
     }
 
@@ -375,7 +376,7 @@ class BrowserViewModel: ObservableObject {
   func selectSpace(_ spaceId: UUID) {
     activeSpaceId = spaceId
 
-    // Select first tab in space (allow no tabs)
+    // Select first tab in space (0 tabs = Welcome to Cloud)
     if let firstTab = tabs.first(where: { $0.spaceId == spaceId }) {
       activeTabId = firstTab.id
     } else {
@@ -475,7 +476,7 @@ class BrowserViewModel: ObservableObject {
     if let url = activeTab?.url {
       searchQuery = url.absoluteString
     } else {
-      searchQuery = ""
+      searchQuery = "google.com"
     }
     isSpotlightVisible = true
   }
@@ -784,20 +785,26 @@ class BrowserViewModel: ObservableObject {
   }
 
   private func loadActiveIds() {
-    if let tabIdString = UserDefaults.standard.string(forKey: "cloud_activeTabId"),
-       let tabId = UUID(uuidString: tabIdString),
-       tabs.contains(where: { $0.id == tabId }) {
-      activeTabId = tabId
-    } else if let firstTab = tabs.first {
-      activeTabId = firstTab.id
-    }
-
+    // Load space FIRST
     if let spaceIdString = UserDefaults.standard.string(forKey: "cloud_activeSpaceId"),
        let spaceId = UUID(uuidString: spaceIdString),
        spaces.contains(where: { $0.id == spaceId }) {
       activeSpaceId = spaceId
     } else if let firstSpace = spaces.first {
       activeSpaceId = firstSpace.id
+    }
+
+    // Then load tab - only from the active space
+    if let tabIdString = UserDefaults.standard.string(forKey: "cloud_activeTabId"),
+       let tabId = UUID(uuidString: tabIdString),
+       let tab = tabs.first(where: { $0.id == tabId }),
+       tab.spaceId == activeSpaceId {
+      activeTabId = tabId
+    } else if let activeSpaceId = activeSpaceId,
+              let firstTabInSpace = tabs.first(where: { $0.spaceId == activeSpaceId }) {
+      activeTabId = firstTabInSpace.id
+    } else {
+      activeTabId = nil
     }
   }
 

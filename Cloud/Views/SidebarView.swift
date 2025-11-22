@@ -516,9 +516,9 @@ struct SidebarView: View {
         }
 
         // URL text (Domain only)
-        Text(viewModel.activeTab?.url.host ?? "Search or enter URL")
+        Text(viewModel.activeTab?.url.host ?? "google.com")
           .font(.system(size: 12))
-          .foregroundColor(textColor)
+          .foregroundColor(secondaryTextColor)
           .lineLimit(1)
           .truncationMode(.tail)
 
