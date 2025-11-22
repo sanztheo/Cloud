@@ -7,6 +7,47 @@
 
 import SwiftUI
 
+// MARK: - Title Bar Drag Area (for window dragging and double-click zoom)
+struct TitleBarDragArea: NSViewRepresentable {
+  func makeNSView(context: Context) -> TitleBarView {
+    let view = TitleBarView()
+    return view
+  }
+
+  func updateNSView(_ nsView: TitleBarView, context: Context) {}
+}
+
+class TitleBarView: NSView {
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    // Register for double-click
+    let clickGesture = NSClickGestureRecognizer(target: self, action: #selector(handleDoubleClick(_:)))
+    clickGesture.numberOfClicksRequired = 2
+    self.addGestureRecognizer(clickGesture)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override var mouseDownCanMoveWindow: Bool {
+    return true
+  }
+
+  @objc private func handleDoubleClick(_ gesture: NSClickGestureRecognizer) {
+    guard let window = self.window else { return }
+
+    // Check user preference for double-click action
+    let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
+
+    if action == "Minimize" {
+      window.performMiniaturize(nil)
+    } else {
+      window.performZoom(nil)
+    }
+  }
+}
+
 struct SidebarView: View {
   @ObservedObject var viewModel: BrowserViewModel
   @State private var hoveredTabId: UUID?
@@ -125,8 +166,8 @@ struct SidebarView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Space for native window controls (traffic lights)
-      Spacer()
+      // Draggable title bar area with double-click to zoom
+      TitleBarDragArea()
         .frame(height: 28)
 
       // Navigation controls (Arc style)

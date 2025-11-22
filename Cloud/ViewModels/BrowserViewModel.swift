@@ -113,21 +113,9 @@ class BrowserViewModel: ObservableObject {
     loadTabs()
     loadActiveIds()
 
-    // If no tabs were restored, create initial tab
-    if tabs.isEmpty {
-      let initialTab = BrowserTab(
-        url: URL(string: "https://www.google.com")!,
-        title: "Google",
-        spaceId: spaces.first!.id
-      )
-      tabs = [initialTab]
-      activeTabId = initialTab.id
-      _ = createWebView(for: initialTab)
-    } else {
-      // Create WebViews for all restored tabs
-      for tab in tabs {
-        _ = createWebView(for: tab)
-      }
+    // Create WebViews for all restored tabs (allow 0 tabs)
+    for tab in tabs {
+      _ = createWebView(for: tab)
     }
   }
 
@@ -196,7 +184,7 @@ class BrowserViewModel: ObservableObject {
     // Update active tab
     if activeTabId == tabId {
       if tabs.isEmpty {
-        createNewTab()
+        activeTabId = nil
       } else {
         let newIndex = min(index, tabs.count - 1)
         activeTabId = tabs[newIndex].id
@@ -387,11 +375,11 @@ class BrowserViewModel: ObservableObject {
   func selectSpace(_ spaceId: UUID) {
     activeSpaceId = spaceId
 
-    // Select first tab in space or create new one
+    // Select first tab in space (allow no tabs)
     if let firstTab = tabs.first(where: { $0.spaceId == spaceId }) {
       activeTabId = firstTab.id
     } else {
-      createNewTab(inSpace: spaceId)
+      activeTabId = nil
     }
   }
 

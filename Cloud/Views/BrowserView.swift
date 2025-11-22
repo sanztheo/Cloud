@@ -172,6 +172,7 @@ struct BrowserView: View {
         .foregroundColor(.secondary.opacity(0.7))
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color(NSColor.windowBackgroundColor))
   }
 
   // MARK: - Floating Animation
