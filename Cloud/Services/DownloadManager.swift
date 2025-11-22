@@ -8,14 +8,24 @@ import Combine
 import Foundation
 import WebKit
 
-class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
+class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate, URLSessionDownloadDelegate {
   @Published var downloads: [DownloadItem] = []
 
   private let downloadsDirectory: URL
   private var activeDownloads: [WKDownload: UUID] = [:]
-  private var activeURLSessionTasks: [UUID: URLSessionDownloadTask] = [:]
+  private var activeURLSessionTasks: [URLSessionDownloadTask: UUID] = [:]
+  private var downloadDestinations: [UUID: URL] = [:]
   private let activeDownloadsQueue = DispatchQueue(label: "cloud.downloads.active", attributes: .concurrent)
   private let persistenceKey = "cloud_downloads"
+
+  // Progress monitoring for WKDownload (which doesn't have progress callbacks)
+  private var progressMonitorTimers: [UUID: Timer] = [:]
+  private var monitoredDownloadPaths: [UUID: URL] = [:]
+
+  private lazy var urlSession: URLSession = {
+    let config = URLSessionConfiguration.default
+    return URLSession(configuration: config, delegate: self, delegateQueue: .main)
+  }()
 
   override init() {
     // Get the real user Downloads folder
@@ -36,6 +46,9 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
   }
 
   func cancelDownload(_ downloadId: UUID) {
+    // Stop progress monitoring
+    stopProgressMonitoring(for: downloadId)
+
     activeDownloadsQueue.sync(flags: .barrier) {
       // Cancel WKDownload if exists
       if let activeDownload = activeDownloads.first(where: { $0.value == downloadId }) {
@@ -43,11 +56,13 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
         activeDownloads.removeValue(forKey: activeDownload.key)
       }
       // Cancel URLSession task if exists
-      if let task = activeURLSessionTasks[downloadId] {
-        task.cancel()
-        activeURLSessionTasks.removeValue(forKey: downloadId)
+      if let taskEntry = activeURLSessionTasks.first(where: { $0.value == downloadId }) {
+        taskEntry.key.cancel()
+        activeURLSessionTasks.removeValue(forKey: taskEntry.key)
       }
     }
+
+    downloadDestinations.removeValue(forKey: downloadId)
 
     DispatchQueue.main.async {
       if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
@@ -79,6 +94,46 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     saveDownloads()
   }
 
+  // MARK: - Progress Monitoring for WKDownload
+
+  private func startProgressMonitoring(for downloadId: UUID, destinationURL: URL, expectedSize: Int64) {
+    // Store the path to monitor
+    monitoredDownloadPaths[downloadId] = destinationURL
+
+    // Create a timer that polls the file size every 0.5 seconds
+    let timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+      self?.updateProgressFromFile(downloadId: downloadId, destinationURL: destinationURL, expectedSize: expectedSize)
+    }
+    progressMonitorTimers[downloadId] = timer
+    NSLog("📥 Started progress monitoring for: %@", destinationURL.lastPathComponent)
+  }
+
+  private func stopProgressMonitoring(for downloadId: UUID) {
+    progressMonitorTimers[downloadId]?.invalidate()
+    progressMonitorTimers.removeValue(forKey: downloadId)
+    monitoredDownloadPaths.removeValue(forKey: downloadId)
+  }
+
+  private func updateProgressFromFile(downloadId: UUID, destinationURL: URL, expectedSize: Int64) {
+    let fileManager = FileManager.default
+
+    // Check if the file exists and get its size
+    guard fileManager.fileExists(atPath: destinationURL.path),
+          let attributes = try? fileManager.attributesOfItem(atPath: destinationURL.path),
+          let fileSize = attributes[.size] as? Int64 else {
+      return
+    }
+
+    DispatchQueue.main.async {
+      if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+        self.downloads[index].downloadedBytes = fileSize
+        if expectedSize > 0 {
+          self.downloads[index].fileSize = expectedSize
+        }
+      }
+    }
+  }
+
   // MARK: - WKDownloadDelegate (Native WebKit Downloads)
 
   func download(
@@ -94,17 +149,21 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
 
     // Create download item
     let sourceURL = response.url ?? URL(fileURLWithPath: "/")
+    let expectedSize = response.expectedContentLength
     let downloadItem = DownloadItem(
       filename: destinationURL.lastPathComponent,
       url: sourceURL,
       destinationURL: destinationURL,
-      fileSize: response.expectedContentLength,
+      fileSize: expectedSize,
       status: .inProgress
     )
 
     DispatchQueue.main.async {
       self.downloads.insert(downloadItem, at: 0)
       self.saveDownloads()
+
+      // Start progress monitoring
+      self.startProgressMonitoring(for: downloadItem.id, destinationURL: destinationURL, expectedSize: expectedSize)
     }
 
     activeDownloadsQueue.sync(flags: .barrier) {
@@ -125,6 +184,9 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
       NSLog("⚠️ downloadDidFinish: No matching download ID found")
       return
     }
+
+    // Stop progress monitoring
+    stopProgressMonitoring(for: downloadId)
 
     DispatchQueue.main.async {
       if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
@@ -148,6 +210,116 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
       downloadId = activeDownloads.removeValue(forKey: download)
     }
     guard let downloadId = downloadId else { return }
+
+    // Stop progress monitoring
+    stopProgressMonitoring(for: downloadId)
+
+    DispatchQueue.main.async {
+      if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+        self.downloads[index].status = .failed
+        self.downloads[index].error = error.localizedDescription
+        self.downloads[index].endTime = Date()
+        self.saveDownloads()
+      }
+    }
+  }
+
+  // MARK: - URLSession Download with Progress
+
+  func startURLSessionDownload(url: URL, suggestedFilename: String) {
+    NSLog("📥 Starting URLSession download with progress for: %@", url.absoluteString)
+
+    let destinationURL = generateUniqueDestinationURL(for: suggestedFilename)
+
+    let downloadItem = DownloadItem(
+      filename: destinationURL.lastPathComponent,
+      url: url,
+      destinationURL: destinationURL,
+      fileSize: 0,
+      status: .inProgress
+    )
+
+    downloads.insert(downloadItem, at: 0)
+    downloadDestinations[downloadItem.id] = destinationURL
+    saveDownloads()
+
+    let task = urlSession.downloadTask(with: url)
+    activeURLSessionTasks[task] = downloadItem.id
+    task.resume()
+  }
+
+  // MARK: - URLSessionDownloadDelegate (Progress Tracking)
+
+  func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    guard let downloadId = activeURLSessionTasks[downloadTask] else { return }
+
+    DispatchQueue.main.async {
+      if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+        self.downloads[index].downloadedBytes = totalBytesWritten
+        if totalBytesExpectedToWrite > 0 {
+          self.downloads[index].fileSize = totalBytesExpectedToWrite
+        }
+      }
+    }
+  }
+
+  func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+    guard let downloadId = activeURLSessionTasks.removeValue(forKey: downloadTask),
+          let destinationURL = downloadDestinations.removeValue(forKey: downloadId) else {
+      NSLog("⚠️ URLSession download finished but no matching ID found")
+      return
+    }
+
+    NSLog("📥 URLSession download finished, moving to: %@", destinationURL.path)
+
+    do {
+      let fileManager = FileManager.default
+
+      // Create directory if needed
+      let destinationDir = destinationURL.deletingLastPathComponent()
+      if !fileManager.fileExists(atPath: destinationDir.path) {
+        try fileManager.createDirectory(at: destinationDir, withIntermediateDirectories: true)
+      }
+
+      // Remove existing file if exists
+      if fileManager.fileExists(atPath: destinationURL.path) {
+        try fileManager.removeItem(at: destinationURL)
+      }
+
+      // Move temp file to destination
+      try fileManager.moveItem(at: location, to: destinationURL)
+
+      NSLog("📥 Download completed: %@", destinationURL.path)
+
+      DispatchQueue.main.async {
+        if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+          self.downloads[index].status = .completed
+          self.downloads[index].endTime = Date()
+          self.downloads[index].downloadedBytes = self.downloads[index].fileSize
+          self.saveDownloads()
+        }
+      }
+    } catch {
+      NSLog("📥 Failed to move downloaded file: %@", error.localizedDescription)
+      DispatchQueue.main.async {
+        if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {
+          self.downloads[index].status = .failed
+          self.downloads[index].error = error.localizedDescription
+          self.downloads[index].endTime = Date()
+          self.saveDownloads()
+        }
+      }
+    }
+  }
+
+  func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    guard let downloadTask = task as? URLSessionDownloadTask,
+          let error = error,
+          let downloadId = activeURLSessionTasks.removeValue(forKey: downloadTask) else { return }
+
+    downloadDestinations.removeValue(forKey: downloadId)
+
+    NSLog("📥 URLSession download failed: %@", error.localizedDescription)
 
     DispatchQueue.main.async {
       if let index = self.downloads.firstIndex(where: { $0.id == downloadId }) {

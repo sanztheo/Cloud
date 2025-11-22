@@ -203,6 +203,7 @@ struct DownloadItemRow: View {
   @State private var hoverOpen = false
   @State private var hoverReveal = false
   @State private var hoverRemove = false
+  @State private var hoverSpinner = false
   @State private var thumbnail: NSImage?
 
   private var isImageFile: Bool {
@@ -328,8 +329,25 @@ struct DownloadItemRow: View {
 
   private var statusIndicator: some View {
     HStack(spacing: 4) {
-      ProgressView()
-        .scaleEffect(0.7, anchor: .center)
+      Button(action: {
+        downloadManager.cancelDownload(download.id)
+      }) {
+        ZStack {
+          if hoverSpinner {
+            Image(systemName: "xmark.circle.fill")
+              .font(.system(size: 16))
+              .foregroundColor(.red)
+          } else {
+            ProgressView()
+              .scaleEffect(0.7, anchor: .center)
+          }
+        }
+        .frame(width: 20, height: 20)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .onHover { hoverSpinner = $0 }
+
       Text("\(Int(download.progress * 100))%")
         .font(.system(size: 11))
         .foregroundColor(secondaryTextColor)

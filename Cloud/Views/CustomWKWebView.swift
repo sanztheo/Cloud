@@ -106,14 +106,20 @@ class CustomWKWebView: WKWebView {
   }
 
   private func startNativeDownload(url: URL) {
-    NSLog("📥 Starting native WKWebView download for: %@", url.absoluteString)
+    NSLog("📥 Starting download with progress for: %@", url.absoluteString)
 
-    // Use WKWebView's native startDownload API
-    let request = URLRequest(url: url)
-    self.startDownload(using: request) { [weak self] download in
-      NSLog("📥 WKDownload created successfully")
-      download.delegate = self?.downloadManager
-      self?.downloadManager?.trackDownload(download)
+    guard let manager = downloadManager else {
+      NSLog("⚠️ downloadManager is nil")
+      return
     }
+
+    // Extract filename from URL
+    var filename = url.lastPathComponent
+    if filename.isEmpty || !filename.contains(".") {
+      filename = "download_\(UUID().uuidString.prefix(8))"
+    }
+
+    // Use URLSession download with progress tracking
+    manager.startURLSessionDownload(url: url, suggestedFilename: filename)
   }
 }

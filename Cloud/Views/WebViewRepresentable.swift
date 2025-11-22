@@ -132,8 +132,8 @@ struct WebViewRepresentable: NSViewRepresentable {
 
       // Check if the response can be displayed in the web view
       if !canShow {
-        // Non-displayable MIME type, trigger download
-        print("📥 → Triggering download (can't show MIME type)")
+        // Non-displayable MIME type - let WKDownload handle it with progress monitoring
+        print("📥 → Can't show MIME type, triggering WKDownload with progress monitoring")
         decisionHandler(.download)
       } else {
         // Normal content, display it
@@ -146,10 +146,11 @@ struct WebViewRepresentable: NSViewRepresentable {
       navigationAction: WKNavigationAction,
       didBecome download: WKDownload
     ) {
-      print("📥 navigationAction didBecome download - URL: \(download.originalRequest?.url?.absoluteString ?? "unknown")")
-      // Set the download manager as the delegate for this download
+      // This is a fallback - downloads should be intercepted at decidePolicyFor level
+      print("📥 navigationAction didBecome download (fallback) - URL: \(download.originalRequest?.url?.absoluteString ?? "unknown")")
+
+      // Use WKDownloadDelegate as fallback (no progress, but still works)
       download.delegate = parent.viewModel.downloadManager
-      // Track this download in the manager
       parent.viewModel.downloadManager.trackDownload(download)
     }
 
@@ -158,10 +159,11 @@ struct WebViewRepresentable: NSViewRepresentable {
       navigationResponse: WKNavigationResponse,
       didBecome download: WKDownload
     ) {
-      print("📥 navigationResponse didBecome download - URL: \(download.originalRequest?.url?.absoluteString ?? "unknown")")
-      // Set the download manager as the delegate for this download
+      // This is a fallback - downloads should be intercepted at decidePolicyFor level
+      print("📥 navigationResponse didBecome download (fallback) - URL: \(download.originalRequest?.url?.absoluteString ?? "unknown")")
+
+      // Use WKDownloadDelegate as fallback (no progress, but still works)
       download.delegate = parent.viewModel.downloadManager
-      // Track this download in the manager
       parent.viewModel.downloadManager.trackDownload(download)
     }
 
@@ -196,7 +198,7 @@ struct WebViewRepresentable: NSViewRepresentable {
 
       // Check if this is a download action (e.g., from context menu "Download Image")
       if navigationAction.shouldPerformDownload {
-        print("📥 → shouldPerformDownload is true, triggering .download policy")
+        print("📥 → shouldPerformDownload is true, triggering WKDownload with progress monitoring")
         decisionHandler(.download, preferences)
         return
       }
