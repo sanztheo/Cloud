@@ -58,15 +58,15 @@ struct WebViewRepresentable: NSViewRepresentable {
   }
 
   private func createFallbackWebView() -> WKWebView {
-    // ✓ Utiliser la configuration optimisée (cohérence > stealth)
-    let configuration = OptimizedWebKitConfig.createConfiguration()
+    // ✓ Use enhanced stealth configuration (2025 best practices)
+    let configuration = StealthWebKitConfig.createConfiguration()
 
-    // Use CustomWKWebView to disable rubber banding
+    // Use CustomWKWebView for download handling
     let webView = CustomWKWebView(frame: .zero, configuration: configuration)
     webView.downloadManager = viewModel.downloadManager
 
-    // ✓ Setup avec User-Agent STABLE
-    OptimizedWebKitConfig.setupWebView(webView)
+    // ✓ Apply stealth settings (stable User-Agent, natural behavior)
+    StealthWebKitConfig.setupWebView(webView)
 
     return webView
   }

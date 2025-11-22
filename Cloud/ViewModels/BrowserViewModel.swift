@@ -55,17 +55,14 @@ class BrowserViewModel: ObservableObject {
   private var summaryTask: Task<Void, Never>?
   private var isSummaryCancelled: Bool = false
 
-  // MARK: - Optimized Configuration (2025 Best Practices)
-  // User-Agent STABLE - pas de rotation (red flag pour les systèmes anti-bot)
-  private static let stableUserAgent = OptimizedWebKitConfig.stableUserAgent
-
-  // IMPORTANT: Pas de JavaScript "stealth" agressif
-  // Les modifications de navigator.* sont détectées par les systèmes anti-bot modernes
-  // WKWebView rapporte naturellement les bonnes propriétés (cohérentes avec macOS)
-  // Pour plus d'infos: voir OptimizedWebKitConfig.swift documentation
-
-  // PAS de JavaScript d'injection - WKWebView rapporte naturellement les bonnes propriétés
-  // L'injection agressive est DÉTECTÉE par les systèmes anti-bot modernes (OpenAI, Claude, etc.)
+  // MARK: - Stealth Configuration (2025 Best Practices)
+  // Uses StealthWebKitConfig for optimal anti-detection settings
+  // Key principles:
+  // - Stable User-Agent matching actual macOS version
+  // - Minimal HTTP headers (what Safari actually sends)
+  // - NO JavaScript injection (90-100% detection rate)
+  // - Default data store for cookie persistence
+  // See StealthWebKitConfig.swift for full documentation
 
   // MARK: - Initialization
   init() {
@@ -80,7 +77,10 @@ class BrowserViewModel: ObservableObject {
     // Use dropFirst to skip the initial load from persistence
     downloadManager.$downloads
       .dropFirst()
-      .scan(([], [])) { (previous: ([DownloadItem], [DownloadItem]), current: [DownloadItem]) -> ([DownloadItem], [DownloadItem]) in
+      .scan(([], [])) {
+        (previous: ([DownloadItem], [DownloadItem]), current: [DownloadItem]) -> (
+          [DownloadItem], [DownloadItem]
+        ) in
         return (previous.1, current)
       }
       .sink { [weak self] (previous, current) in
@@ -154,24 +154,23 @@ class BrowserViewModel: ObservableObject {
   // MARK: - WebView Management
 
   func createWebView(for tab: BrowserTab) -> WKWebView {
-    // ✓ Utiliser la configuration optimisée (cohérence > stealth)
-    let configuration = OptimizedWebKitConfig.createConfiguration()
+    // ✓ Use enhanced stealth configuration (2025 best practices)
+    let configuration = StealthWebKitConfig.createConfiguration()
 
-    // Use CustomWKWebView to disable rubber banding
+    // Use CustomWKWebView for download handling
     let webView = CustomWKWebView(
       frame: NSRect(x: 0, y: 0, width: 100, height: 100), configuration: configuration)
 
-    // ✓ Setup avec User-Agent STABLE et configuration optimale
-    OptimizedWebKitConfig.setupWebView(webView)
-
-    // ✓ Pas d'injection JavaScript agressive (détectée par OpenAI/Claude)
+    // ✓ Apply stealth settings (stable User-Agent matching OS, natural behavior)
+    StealthWebKitConfig.setupWebView(webView)
 
     webViews[tab.id] = webView
 
     // Observe isLoading via KVO to sync with tab model
     // This ensures isLoading is updated even without navigationDelegate
     let tabId = tab.id
-    loadingObservations[tabId] = webView.observe(\.isLoading, options: [.new]) { [weak self] webView, change in
+    loadingObservations[tabId] = webView.observe(\.isLoading, options: [.new]) {
+      [weak self] webView, change in
       guard let self = self else { return }
       DispatchQueue.main.async {
         if let index = self.tabs.firstIndex(where: { $0.id == tabId }) {
@@ -245,8 +244,9 @@ class BrowserViewModel: ObservableObject {
   func selectTab(_ tabId: UUID) {
     // Determine transition direction based on tab index
     if let currentTabId = activeTabId,
-       let currentIndex = tabs.firstIndex(where: { $0.id == currentTabId }),
-       let newIndex = tabs.firstIndex(where: { $0.id == tabId }) {
+      let currentIndex = tabs.firstIndex(where: { $0.id == currentTabId }),
+      let newIndex = tabs.firstIndex(where: { $0.id == tabId })
+    {
       transitionDirection = newIndex > currentIndex ? .trailing : .leading
     }
 
@@ -277,13 +277,13 @@ class BrowserViewModel: ObservableObject {
   func loadURL(_ url: URL, for tabId: UUID) {
     guard let webView = webViews[tabId] else { return }
 
-    // ✓ En-têtes minimaux et cohérents (pas de faux headers suspects)
+    // ✓ Minimal, system-consistent headers (what Safari actually sends)
     var request = URLRequest(url: url)
-    OptimizedWebKitConfig.configureRequest(&request)
+    StealthWebKitConfig.configureRequest(&request)
 
-    // Debug log pour les sites avec protection forte
-    if OptimizedWebKitConfig.hasStrongBotProtection(url: url) {
-      OptimizedWebKitConfig.logDiagnostic(for: webView, url: url)
+    // Debug log for sites with strong bot protection
+    if StealthWebKitConfig.hasStrongBotProtection(url: url) {
+      StealthWebKitConfig.logDiagnostic(for: webView, url: url)
     }
 
     webView.load(request)
@@ -538,8 +538,8 @@ class BrowserViewModel: ObservableObject {
     guard !searchText.isEmpty else { return history }
     let lowercased = searchText.lowercased()
     return history.filter { entry in
-      entry.title.lowercased().contains(lowercased) ||
-      entry.url.absoluteString.lowercased().contains(lowercased)
+      entry.title.lowercased().contains(lowercased)
+        || entry.url.absoluteString.lowercased().contains(lowercased)
     }
   }
 
@@ -601,33 +601,36 @@ class BrowserViewModel: ObservableObject {
 
     // Add "Summarize Page" command if there's an active tab with content
     if let activeTab = tabs.first(where: { $0.id == activeTabId }),
-       !activeTab.isLoading,
-       activeTab.url.absoluteString != "about:blank",
-       query.localizedCaseInsensitiveContains("summ") || query.isEmpty {
-      results.append(SearchResult(
-        type: .command,
-        title: "Summarize Page",
-        subtitle: "Generate AI summary of current page",
-        url: nil,
-        tabId: activeTabId,
-        favicon: nil
-      ))
+      !activeTab.isLoading,
+      activeTab.url.absoluteString != "about:blank",
+      query.localizedCaseInsensitiveContains("summ") || query.isEmpty
+    {
+      results.append(
+        SearchResult(
+          type: .command,
+          title: "Summarize Page",
+          subtitle: "Generate AI summary of current page",
+          url: nil,
+          tabId: activeTabId,
+          favicon: nil
+        ))
     }
 
     // Filter tabs by active space
     let spaceTabs = tabs.filter { $0.spaceId == activeSpaceId }
 
     if query.isEmpty {
-      results.append(contentsOf: spaceTabs.map { tab in
-        SearchResult(
-          type: .tab,
-          title: tab.title,
-          subtitle: tab.url.host ?? tab.url.absoluteString,
-          url: tab.url,
-          tabId: tab.id,
-          favicon: tab.favicon
-        )
-      })
+      results.append(
+        contentsOf: spaceTabs.map { tab in
+          SearchResult(
+            type: .tab,
+            title: tab.title,
+            subtitle: tab.url.host ?? tab.url.absoluteString,
+            url: tab.url,
+            tabId: tab.id,
+            favicon: tab.favicon
+          )
+        })
       return results
     }
 
@@ -652,7 +655,8 @@ class BrowserViewModel: ObservableObject {
 
     // 2. Add search suggestion (second if URL, first otherwise)
     let searchUrl = URL(
-      string: "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
+      string:
+        "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
     )
     results.append(
       SearchResult(
@@ -746,7 +750,8 @@ class BrowserViewModel: ObservableObject {
   @MainActor
   func summarizePage() async {
     guard let activeTab = tabs.first(where: { $0.id == activeTabId }),
-          let webView = getWebView(for: activeTab.id) else {
+      let webView = getWebView(for: activeTab.id)
+    else {
       summaryError = "No active page to summarize"
       return
     }
@@ -766,16 +771,20 @@ class BrowserViewModel: ObservableObject {
       guard !isSummaryCancelled else { return }
 
       // Extract page content using JavaScript
-      let pageContent = try await webView.evaluateJavaScript("document.body.innerText") as? String ?? ""
+      let pageContent =
+        try await webView.evaluateJavaScript("document.body.innerText") as? String ?? ""
 
       guard !isSummaryCancelled else { return }
 
       guard !pageContent.isEmpty else {
-        throw NSError(domain: "BrowserViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "Page has no text content"])
+        throw NSError(
+          domain: "BrowserViewModel", code: 1,
+          userInfo: [NSLocalizedDescriptionKey: "Page has no text content"])
       }
 
       // Clean content (remove excessive whitespace)
-      let cleanedContent = pageContent
+      let cleanedContent =
+        pageContent
         .components(separatedBy: .whitespacesAndNewlines)
         .filter { !$0.isEmpty }
         .joined(separator: " ")
@@ -787,7 +796,9 @@ class BrowserViewModel: ObservableObject {
       let contentHash = await cacheService.generateContentHash(cleanedContent)
 
       // Check cache first
-      if let cachedSummary = await cacheService.getCachedSummary(for: activeTab.url, contentHash: contentHash) {
+      if let cachedSummary = await cacheService.getCachedSummary(
+        for: activeTab.url, contentHash: contentHash)
+      {
         guard !isSummaryCancelled else { return }
         summarizingStatus = "Loading cached summary..."
         summaryText = cachedSummary
@@ -886,8 +897,9 @@ class BrowserViewModel: ObservableObject {
 
   private func loadTabs() {
     if let data = UserDefaults.standard.data(forKey: "cloud_tabs"),
-       let decoded = try? JSONDecoder().decode([BrowserTab].self, from: data),
-       !decoded.isEmpty {
+      let decoded = try? JSONDecoder().decode([BrowserTab].self, from: data),
+      !decoded.isEmpty
+    {
       tabs = decoded
       // Reload favicons for restored tabs
       for tab in tabs {
@@ -908,8 +920,9 @@ class BrowserViewModel: ObservableObject {
   private func loadActiveIds() {
     // Load space FIRST
     if let spaceIdString = UserDefaults.standard.string(forKey: "cloud_activeSpaceId"),
-       let spaceId = UUID(uuidString: spaceIdString),
-       spaces.contains(where: { $0.id == spaceId }) {
+      let spaceId = UUID(uuidString: spaceIdString),
+      spaces.contains(where: { $0.id == spaceId })
+    {
       activeSpaceId = spaceId
     } else if let firstSpace = spaces.first {
       activeSpaceId = firstSpace.id
@@ -917,12 +930,14 @@ class BrowserViewModel: ObservableObject {
 
     // Then load tab - only from the active space
     if let tabIdString = UserDefaults.standard.string(forKey: "cloud_activeTabId"),
-       let tabId = UUID(uuidString: tabIdString),
-       let tab = tabs.first(where: { $0.id == tabId }),
-       tab.spaceId == activeSpaceId {
+      let tabId = UUID(uuidString: tabIdString),
+      let tab = tabs.first(where: { $0.id == tabId }),
+      tab.spaceId == activeSpaceId
+    {
       activeTabId = tabId
     } else if let activeSpaceId = activeSpaceId,
-              let firstTabInSpace = tabs.first(where: { $0.spaceId == activeSpaceId }) {
+      let firstTabInSpace = tabs.first(where: { $0.spaceId == activeSpaceId })
+    {
       activeTabId = firstTabInSpace.id
     } else {
       activeTabId = nil

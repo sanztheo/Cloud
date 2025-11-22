@@ -46,6 +46,22 @@ class SwipeListeningView: NSView {
   private var isDragging: Bool = false
   private let swipeThresholdPercent: CGFloat = 0.5 // 50% threshold
 
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    // Allow mouse events to pass through to subviews
+    self.wantsLayer = true
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  // CRITICAL: Allow hit testing to pass through to subviews
+  // This fixes hover detection on tabs
+  override func hitTest(_ point: NSPoint) -> NSView? {
+    return nil // Let events pass through to SwiftUI views underneath
+  }
+
   override func viewDidMoveToWindow() {
     super.viewDidMoveToWindow()
     setupMonitor()

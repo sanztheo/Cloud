@@ -154,8 +154,8 @@ struct SidebarView: View {
 
   @ViewBuilder
   private func tabsListContent(for spaceId: UUID) -> some View {
-    ScrollView {
-      LazyVStack(spacing: 4) {
+    ScrollView(.vertical, showsIndicators: false) {
+      VStack(spacing: 4) {
         let pinnedTabs = viewModel.pinnedTabsForSpace(spaceId)
         if !pinnedTabs.isEmpty {
           pinnedTabsSection(pinnedTabs)
@@ -169,6 +169,7 @@ struct SidebarView: View {
       .padding(.horizontal, 8)
       .padding(.vertical, 8)
     }
+    .scrollContentBackground(.hidden)
   }
 
   var body: some View {
@@ -250,6 +251,7 @@ struct SidebarView: View {
           },
           sidebarWidth: 240
         )
+        .allowsHitTesting(false) // Don't capture mouse events, only scroll wheel via monitor
       }
     )
     .clipped()
@@ -366,60 +368,62 @@ struct SidebarView: View {
 
   // MARK: - Tab Row
   private func tabRow(_ tab: BrowserTab) -> some View {
-    Button(action: { viewModel.selectTab(tab.id) }) {
-      HStack(spacing: 8) {
-        // Favicon
-        if let favicon = tab.favicon {
-          Image(nsImage: favicon)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 16, height: 16)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-        } else {
-          Image(systemName: "globe")
-            .font(.system(size: 12))
-            .foregroundColor(secondaryTextColor)
-            .frame(width: 16, height: 16)
-        }
-
-        // Title
-        Text(tab.title)
+    HStack(spacing: 8) {
+      // Favicon
+      if let favicon = tab.favicon {
+        Image(nsImage: favicon)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 16, height: 16)
+          .clipShape(RoundedRectangle(cornerRadius: 3))
+      } else {
+        Image(systemName: "globe")
           .font(.system(size: 12))
-          .lineLimit(1)
-          .truncationMode(.tail)
-          .foregroundColor(textColor)
-
-        Spacer()
-
-        // Loading indicator or close button
-        if tab.isLoading {
-          ProgressView()
-            .scaleEffect(0.5)
-            .frame(width: 16, height: 16)
-        } else if hoveredTabId == tab.id {
-          Button(action: { viewModel.closeTab(tab.id) }) {
-            Image(systemName: "xmark")
-              .font(.system(size: 8, weight: .bold))
-              .foregroundColor(secondaryTextColor)
-              .frame(width: 16, height: 16)
-              .background(Color.black.opacity(0.2))
-              .clipShape(Circle())
-          }
-          .buttonStyle(.plain)
-        }
+          .foregroundColor(secondaryTextColor)
+          .frame(width: 16, height: 16)
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 10)
-      .background(
-        RoundedRectangle(cornerRadius: 6)
-          .fill(
-            viewModel.activeTabId == tab.id
-              ? Color.black.opacity(0.2)
-              : (hoveredTabId == tab.id ? Color.black.opacity(0.1) : Color.clear))
-      )
+
+      // Title
+      Text(tab.title)
+        .font(.system(size: 12))
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .foregroundColor(textColor)
+
+      Spacer()
+
+      // Loading indicator or close button
+      if tab.isLoading {
+        ProgressView()
+          .scaleEffect(0.5)
+          .frame(width: 16, height: 16)
+      } else if hoveredTabId == tab.id {
+        Image(systemName: "xmark")
+          .font(.system(size: 8, weight: .bold))
+          .foregroundColor(secondaryTextColor)
+          .frame(width: 16, height: 16)
+          .background(Color.black.opacity(0.2))
+          .clipShape(Circle())
+          .onTapGesture {
+            viewModel.closeTab(tab.id)
+          }
+      }
     }
-    .buttonStyle(.plain)
-    .onHover { isHovering in
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .contentShape(Rectangle())
+    .background(
+      RoundedRectangle(cornerRadius: 6)
+        .fill(
+          viewModel.activeTabId == tab.id
+            ? Color.black.opacity(0.2)
+            : (hoveredTabId == tab.id ? Color.black.opacity(0.1) : Color.clear))
+    )
+    .onTapGesture {
+      viewModel.selectTab(tab.id)
+    }
+    .reliableHover { isHovering in
       hoveredTabId = isHovering ? tab.id : nil
     }
     .contextMenu {

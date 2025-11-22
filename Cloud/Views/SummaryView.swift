@@ -12,7 +12,7 @@ struct SummaryView: View {
   // Computed property pour la couleur du texte basée sur le mode du space/profil
   private var textColor: Color {
     guard let theme = viewModel.activeSpace?.theme else {
-      return .black // Fallback si pas de theme (mode light par défaut)
+      return .black  // Fallback si pas de theme (mode light par défaut)
     }
 
     switch theme.mode {
