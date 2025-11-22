@@ -92,6 +92,14 @@ final class StealthWebKitConfig {
         // Tab focus (matches Safari default)
         preferences.tabFocusesLinks = true
 
+        // ═══════════════════════════════════════════════════════════
+        // HTML5 FULLSCREEN - Required for YouTube and video players
+        // Available since macOS 12.3 / iOS 15.4
+        // ═══════════════════════════════════════════════════════════
+        if #available(macOS 12.3, *) {
+            preferences.isElementFullscreenEnabled = true
+        }
+
         config.preferences = preferences
 
         // ═══════════════════════════════════════════════════════════

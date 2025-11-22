@@ -123,6 +123,18 @@ struct BrowserView: View {
     .onReceive(NotificationCenter.default.publisher(for: .showSettings)) { _ in
       showSettings = true
     }
+    .onChange(of: viewModel.isSidebarCollapsed) { _, isCollapsed in
+      // Hide/show traffic lights based on sidebar visibility
+      if let window = NSApp.windows.first {
+        let hidden = isCollapsed
+        NSAnimationContext.runAnimationGroup { context in
+          context.duration = 0.2
+          window.standardWindowButton(.closeButton)?.animator().alphaValue = hidden ? 0 : 1
+          window.standardWindowButton(.miniaturizeButton)?.animator().alphaValue = hidden ? 0 : 1
+          window.standardWindowButton(.zoomButton)?.animator().alphaValue = hidden ? 0 : 1
+        }
+      }
+    }
     .sheet(isPresented: $showSettings) {
       SettingsWindow()
     }
