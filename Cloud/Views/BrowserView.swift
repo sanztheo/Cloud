@@ -11,6 +11,7 @@ struct BrowserView: View {
   @StateObject private var viewModel = BrowserViewModel()
   @State private var showSettings = false
   @State private var floatingRotation: Double = 0
+  @Namespace private var namespace
 
   // MARK: - Interpolated Background Color
   private var interpolatedBackgroundColor: Color {
@@ -24,7 +25,8 @@ struct BrowserView: View {
 
     // Get adjacent space based on drag direction
     guard let currentId = viewModel.activeSpaceId,
-          let currentIndex = viewModel.spaces.firstIndex(where: { $0.id == currentId }) else {
+      let currentIndex = viewModel.spaces.firstIndex(where: { $0.id == currentId })
+    else {
       return currentColor
     }
 
@@ -130,18 +132,31 @@ struct BrowserView: View {
   @ViewBuilder
   private var webContent: some View {
     if let tabId = viewModel.activeTabId {
-      if viewModel.isSummarizing {
-        // Summary Mode: Shrink WebView and show summary below with global scroll
-        ScrollView(.vertical, showsIndicators: true) {
+      GeometryReader { geometry in
+        ScrollView(.vertical, showsIndicators: viewModel.isSummarizing) {
           VStack(spacing: 24) {
-            // Shrunk WebView (centered, 600x400) with floating animation during generation
+            // WebView - Persistent instance that resizes
             WebViewRepresentable(tabId: tabId, viewModel: viewModel)
-              .frame(width: 600, height: 400)
+              .frame(
+                width: viewModel.isSummarizing ? 600 : geometry.size.width,
+                height: viewModel.isSummarizing ? 400 : geometry.size.height
+              )
               .clipShape(RoundedRectangle(cornerRadius: 12))
-              .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
-              .rotationEffect(.degrees(floatingRotation))
-              .onAppear {
-                startFloatingAnimation()
+              .shadow(
+                color: Color.black.opacity(viewModel.isSummarizing ? 0.2 : 0),
+                radius: viewModel.isSummarizing ? 10 : 0,
+                x: 0,
+                y: viewModel.isSummarizing ? 4 : 0
+              )
+              .rotationEffect(.degrees(viewModel.isSummarizing ? floatingRotation : 0))
+              .onChange(of: viewModel.isSummarizing) { _, isSummarizing in
+                if isSummarizing {
+                  startFloatingAnimation()
+                } else {
+                  withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    floatingRotation = 0
+                  }
+                }
               }
               .onChange(of: viewModel.isSummaryComplete) { _, isComplete in
                 if isComplete {
@@ -151,21 +166,16 @@ struct BrowserView: View {
                 }
               }
 
-            // Summary View below
-            SummaryView(viewModel: viewModel)
-              .frame(maxWidth: 800)
-              .transition(.opacity.combined(with: .move(edge: .bottom)))
+            // Summary View - Appears below
+            if viewModel.isSummarizing {
+              SummaryView(viewModel: viewModel)
+                .frame(maxWidth: 800)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
           }
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 40)
+          .frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .transition(.scale(scale: 0.95).combined(with: .opacity))
-        .id("summary-\(tabId)")  // Different ID for summary mode to trigger transition
-      } else {
-        // Normal Mode: Full WebView
-        WebViewRepresentable(tabId: tabId, viewModel: viewModel)
-          .id("normal-\(tabId)")  // Different ID for normal mode
+        .scrollDisabled(!viewModel.isSummarizing)
       }
     } else {
       emptyState

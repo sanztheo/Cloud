@@ -17,6 +17,11 @@ struct WebViewRepresentable: NSViewRepresentable {
     webView.navigationDelegate = context.coordinator
     webView.uiDelegate = context.coordinator
 
+    // Set download manager if this is CustomWKWebView
+    if let customWebView = webView as? CustomWKWebView {
+      customWebView.downloadManager = viewModel.downloadManager
+    }
+
     // Critical: Enable autoresizing to fill available space
     webView.autoresizingMask = [.width, .height]
 
@@ -44,6 +49,7 @@ struct WebViewRepresentable: NSViewRepresentable {
 
     // Use CustomWKWebView to disable rubber banding
     let webView = CustomWKWebView(frame: .zero, configuration: configuration)
+    webView.downloadManager = viewModel.downloadManager
 
     // ✓ Setup avec User-Agent STABLE
     OptimizedWebKitConfig.setupWebView(webView)
@@ -160,26 +166,33 @@ struct WebViewRepresentable: NSViewRepresentable {
 
     func webView(
       _ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
-      decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+      preferences: WKWebpagePreferences,
+      decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
     ) {
+      // Check if this is a download action (e.g., from context menu "Download Image")
+      if navigationAction.shouldPerformDownload {
+        decisionHandler(.download, preferences)
+        return
+      }
+
       // Handle special URLs
       if let url = navigationAction.request.url {
         // Open external apps for specific URL schemes
         if url.scheme == "mailto" || url.scheme == "tel" {
           NSWorkspace.shared.open(url)
-          decisionHandler(.cancel)
+          decisionHandler(.cancel, preferences)
           return
         }
 
         // Handle new window requests as new tabs
         if navigationAction.targetFrame == nil {
           parent.viewModel.createNewTab(url: url)
-          decisionHandler(.cancel)
+          decisionHandler(.cancel, preferences)
           return
         }
       }
 
-      decisionHandler(.allow)
+      decisionHandler(.allow, preferences)
     }
 
     // MARK: - WKUIDelegate

@@ -3,6 +3,7 @@
 //  Cloud
 //
 
+import AppKit
 import Combine
 import Foundation
 import WebKit
@@ -91,24 +92,34 @@ class DownloadManager: NSObject, ObservableObject, WKDownloadDelegate {
     suggestedFilename: String,
     completionHandler: @escaping (URL?) -> Void
   ) {
-    let destinationURL = downloadsDirectory.appendingPathComponent(suggestedFilename)
-    let sourceURL = response.url ?? URL(fileURLWithPath: "/")
-    let downloadItem = DownloadItem(
-      filename: suggestedFilename,
-      url: sourceURL,
-      destinationURL: destinationURL,
-      fileSize: response.expectedContentLength
-    )
+    // IMPORTANT: Must call completionHandler synchronously to avoid WebKit crash
+    // Using runModal() instead of begin() to ensure completion handler is always called
+    let savePanel = NSSavePanel()
+    savePanel.nameFieldStringValue = suggestedFilename
+    savePanel.directoryURL = downloadsDirectory
+    savePanel.canCreateDirectories = true
 
-    DispatchQueue.main.async {
-      self.downloads.insert(downloadItem, at: 0)
-      self.activeDownloadsQueue.sync(flags: .barrier) {
-        self.activeDownloads[download] = downloadItem.id
+    let result = savePanel.runModal()
+
+    if result == .OK, let url = savePanel.url {
+      let sourceURL = response.url ?? URL(fileURLWithPath: "/")
+      let downloadItem = DownloadItem(
+        filename: url.lastPathComponent,
+        url: sourceURL,
+        destinationURL: url,
+        fileSize: response.expectedContentLength
+      )
+
+      downloads.insert(downloadItem, at: 0)
+      activeDownloadsQueue.sync(flags: .barrier) {
+        activeDownloads[download] = downloadItem.id
       }
-      self.saveDownloads()
-    }
+      saveDownloads()
 
-    completionHandler(destinationURL)
+      completionHandler(url)
+    } else {
+      completionHandler(nil)
+    }
   }
 
   func downloadDidFinish(_ download: WKDownload) {
