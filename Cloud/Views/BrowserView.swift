@@ -12,6 +12,38 @@ struct BrowserView: View {
   @State private var showSettings = false
   @State private var floatingRotation: Double = 0
 
+  // MARK: - Interpolated Background Color
+  private var interpolatedBackgroundColor: Color {
+    let currentColor = AppColors.background(for: viewModel.activeSpace?.theme)
+    let dragOffset = viewModel.spaceSwipeDragOffset
+    let sidebarWidth: CGFloat = 240
+
+    guard abs(dragOffset) > 0 else { return currentColor }
+
+    let progress = abs(dragOffset) / sidebarWidth
+
+    // Get adjacent space based on drag direction
+    guard let currentId = viewModel.activeSpaceId,
+          let currentIndex = viewModel.spaces.firstIndex(where: { $0.id == currentId }) else {
+      return currentColor
+    }
+
+    let targetColor: Color
+    if dragOffset > 0 {
+      // Dragging right -> previous space
+      guard currentIndex > 0 else { return currentColor }
+      let prevSpace = viewModel.spaces[currentIndex - 1]
+      targetColor = AppColors.background(for: prevSpace.theme)
+    } else {
+      // Dragging left -> next space
+      guard currentIndex < viewModel.spaces.count - 1 else { return currentColor }
+      let nextSpace = viewModel.spaces[currentIndex + 1]
+      targetColor = AppColors.background(for: nextSpace.theme)
+    }
+
+    return currentColor.interpolate(to: targetColor, progress: progress)
+  }
+
   var body: some View {
     ZStack {
       // Main content
@@ -48,7 +80,7 @@ struct BrowserView: View {
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSpotlightVisible)
     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.isSidebarCollapsed)
     .frame(minWidth: 800, minHeight: 600)
-    .background(AppColors.background(for: viewModel.activeSpace?.theme))
+    .background(interpolatedBackgroundColor)
     .ignoresSafeArea(.all, edges: .top)
     .onAppear {
       setupKeyboardShortcuts()
