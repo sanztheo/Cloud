@@ -67,3 +67,4 @@ fastlane/test_output/
 # Autre
 *.orig
 default.profraw
+*.md
