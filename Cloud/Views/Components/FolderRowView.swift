@@ -16,6 +16,7 @@ struct FolderRowView: View {
     @State private var editedName: String = ""
     @State private var isTargeted: Bool = false
     @State private var hoveredTabId: UUID?
+    @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -39,22 +40,29 @@ struct FolderRowView: View {
 
                 // Folder name (editable)
                 if isEditing {
-                    TextField("Folder name", text: $editedName, onCommit: {
-                        if !editedName.isEmpty {
-                            viewModel.renameFolder(folder.id, to: editedName)
+                    TextField("Folder name", text: $editedName)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(textColor)
+                        .focused($isTextFieldFocused)
+                        .onSubmit {
+                            commitRename()
                         }
-                        isEditing = false
-                    })
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(textColor)
+                        .onExitCommand {
+                            cancelRename()
+                        }
+                        .onChange(of: isTextFieldFocused) { _, focused in
+                            if !focused && isEditing {
+                                // Lost focus - commit the rename
+                                commitRename()
+                            }
+                        }
                 } else {
                     Text(folder.name)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(textColor)
                         .onTapGesture(count: 2) {
-                            editedName = folder.name
-                            isEditing = true
+                            startEditing()
                         }
                 }
 
@@ -73,12 +81,14 @@ struct FolderRowView: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(isTargeted ? Color.accentColor.opacity(0.2) : (isHovered ? Color.black.opacity(0.1) : Color.clear))
+                    .fill(isEditing ? Color.black.opacity(0.15) : (isTargeted ? Color.accentColor.opacity(0.2) : (isHovered ? Color.black.opacity(0.1) : Color.clear)))
             )
             .contentShape(Rectangle())
             .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    viewModel.toggleFolderExpanded(folder.id)
+                if !isEditing {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.toggleFolderExpanded(folder.id)
+                    }
                 }
             }
             .reliableHover { hovering in
@@ -86,8 +96,7 @@ struct FolderRowView: View {
             }
             .contextMenu {
                 Button("Rename") {
-                    editedName = folder.name
-                    isEditing = true
+                    startEditing()
                 }
 
                 Divider()
@@ -123,6 +132,34 @@ struct FolderRowView: View {
             }
         }
     }
+
+    // MARK: - Rename Helpers
+
+    private func startEditing() {
+        editedName = folder.name
+        isEditing = true
+        // Delay focus to ensure TextField is rendered
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            isTextFieldFocused = true
+        }
+    }
+
+    private func commitRename() {
+        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty && trimmedName != folder.name {
+            viewModel.renameFolder(folder.id, to: trimmedName)
+        }
+        isEditing = false
+        isTextFieldFocused = false
+    }
+
+    private func cancelRename() {
+        editedName = folder.name
+        isEditing = false
+        isTextFieldFocused = false
+    }
+
+    // MARK: - Tab Row
 
     private func folderTabRow(_ tab: BrowserTab) -> some View {
         HStack(spacing: 8) {
