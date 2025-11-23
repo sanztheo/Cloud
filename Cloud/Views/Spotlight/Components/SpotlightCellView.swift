@@ -210,6 +210,60 @@ class SpotlightCellView: NSTableCellView {
           systemSymbolName: "text.bubble.fill", accessibilityDescription: nil)
         iconImageView.contentTintColor = .white
         iconColor = .white
+      } else if result.type == .command && result.title == "Search History with AI" {
+        // AI Search command with gradient style
+        iconBackground.layer?.backgroundColor = NSColor.clear.cgColor
+
+        iconBackground.layer?.sublayers?.forEach {
+          if $0 is CAGradientLayer { $0.removeFromSuperlayer() }
+        }
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+          NSColor(red: 0.447, green: 0.706, blue: 1.0, alpha: 1.0).cgColor,
+          NSColor(red: 0.145, green: 0.545, blue: 1.0, alpha: 1.0).cgColor,
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 36, height: 36)
+        gradientLayer.cornerRadius = 10
+        gradientLayer.borderWidth = 2
+        gradientLayer.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+
+        iconBackground.layer?.insertSublayer(gradientLayer, at: 0)
+        iconBackground.layer?.cornerRadius = 10
+
+        iconImageView.image = NSImage(
+          systemSymbolName: "sparkles", accessibilityDescription: nil)
+        iconImageView.contentTintColor = .white
+        iconColor = .white
+      } else if result.type == .command && (result.title.hasPrefix("Searching") || result.title == "Aucun résultat" || result.title == "Erreur") {
+        // AI Search loading indicator with same gradient style
+        iconBackground.layer?.backgroundColor = NSColor.clear.cgColor
+
+        iconBackground.layer?.sublayers?.forEach {
+          if $0 is CAGradientLayer { $0.removeFromSuperlayer() }
+        }
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+          NSColor(red: 0.447, green: 0.706, blue: 1.0, alpha: 1.0).cgColor,
+          NSColor(red: 0.145, green: 0.545, blue: 1.0, alpha: 1.0).cgColor,
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 36, height: 36)
+        gradientLayer.cornerRadius = 10
+        gradientLayer.borderWidth = 2
+        gradientLayer.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+
+        iconBackground.layer?.insertSublayer(gradientLayer, at: 0)
+        iconBackground.layer?.cornerRadius = 10
+
+        iconImageView.image = NSImage(
+          systemSymbolName: "sparkles", accessibilityDescription: nil)
+        iconImageView.contentTintColor = .white
+        iconColor = .white
       } else {
         // Standard icon config
         // Remove any custom gradient if present

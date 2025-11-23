@@ -112,8 +112,8 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       return false
     } else if commandSelector == #selector(NSResponder.moveRight(_:)) {
       let query = searchField.stringValue
-      if let editor = textView as? NSTextView, !currentAutocomplete.isEmpty {
-        let selectedRange = editor.selectedRange
+      if !currentAutocomplete.isEmpty {
+        let selectedRange = textView.selectedRange()
         if selectedRange.location == query.count {
           applyAutocomplete()
           return true
@@ -189,6 +189,11 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     // AI Search mode - perform search or select result
     if viewModel.isAISearchMode {
+      // Ignore Enter while search is in progress (thinking animation running)
+      if thinkingTimer != nil {
+        return
+      }
+
       // If we have results and one is selected, navigate to it
       if !searchResults.isEmpty {
         let selectedRow = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
@@ -270,7 +275,10 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
   // MARK: - AI Search
 
-  private func performAISearch(query: String) {
+  func performAISearch(query: String) {
+    // Show thinking indicator
+    startThinkingAnimation()
+
     Task { @MainActor in
       do {
         let results = try await LocalRAGService.shared.semanticSearch(
@@ -278,21 +286,77 @@ extension SpotlightViewController: NSSearchFieldDelegate {
           limit: 10
         )
 
-        // Convert to SearchResult and update
-        viewModel.setAIResults(results.map { ragResult in
-          SearchResult(
-            type: .history,
-            title: ragResult.document.title,
-            subtitle: "\(ragResult.document.url) • \(Int(ragResult.score * 100))% match",
-            url: URL(string: ragResult.document.url)
-          )
-        })
+        // Stop thinking animation
+        stopThinkingAnimation()
+
+        // Check if we found any results
+        if results.isEmpty {
+          viewModel.setAIResults([
+            SearchResult(
+              type: .command,
+              title: "Aucun résultat",
+              subtitle: "Je n'ai trouvé aucun lien correspondant dans votre historique",
+              url: nil
+            )
+          ])
+        } else {
+          // Convert to SearchResult and update
+          viewModel.setAIResults(results.map { ragResult in
+            SearchResult(
+              type: .history,
+              title: ragResult.document.title,
+              subtitle: "\(ragResult.document.url) • \(Int(ragResult.score * 100))% match",
+              url: URL(string: ragResult.document.url)
+            )
+          })
+        }
 
         updateResults()
 
       } catch {
+        stopThinkingAnimation()
+        viewModel.setAIResults([
+          SearchResult(
+            type: .command,
+            title: "Erreur",
+            subtitle: "Une erreur s'est produite lors de la recherche",
+            url: nil
+          )
+        ])
+        updateResults()
         print("AI Search error: \(error)")
       }
     }
+  }
+
+  func startThinkingAnimation() {
+    thinkingDots = 0
+    updateThinkingDisplay()
+
+    thinkingTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+      guard let self = self else { return }
+      self.thinkingDots = (self.thinkingDots + 1) % 4
+      self.updateThinkingDisplay()
+    }
+  }
+
+  func stopThinkingAnimation() {
+    thinkingTimer?.invalidate()
+    thinkingTimer = nil
+  }
+
+  func updateThinkingDisplay() {
+    let dots = String(repeating: ".", count: thinkingDots)
+    let spaces = String(repeating: " ", count: 3 - thinkingDots)
+
+    viewModel.setAIResults([
+      SearchResult(
+        type: .command,
+        title: "Searching\(dots)\(spaces)",
+        subtitle: "Looking through your history...",
+        url: nil
+      )
+    ])
+    updateResults()
   }
 }

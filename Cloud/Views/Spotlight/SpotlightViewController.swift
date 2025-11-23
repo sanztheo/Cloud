@@ -32,6 +32,10 @@ class SpotlightViewController: NSViewController {
     }
   }
 
+  // AI Search thinking animation
+  var thinkingTimer: Timer?
+  var thinkingDots: Int = 0
+
   override func loadView() {
     let rootView = SpotlightRootView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
     rootView.onMouseDown = { [weak self] in
