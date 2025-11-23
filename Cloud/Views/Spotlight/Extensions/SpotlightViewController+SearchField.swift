@@ -9,6 +9,20 @@ import AppKit
 
 // MARK: - NSSearchFieldDelegate
 extension SpotlightViewController: NSSearchFieldDelegate {
+  // Called on every keystroke - instant updates
+  func controlTextDidChange(_ obj: Notification) {
+    // Clear old suggestions immediately so "Search Google" appears instantly
+    viewModel.suggestions = []
+
+    viewModel.searchQuery = searchField.stringValue
+    if viewModel.isAskMode {
+      viewModel.askQuestion = searchField.stringValue
+    }
+    updateResults()
+    updateIcon()
+    updateAskBadge()
+  }
+
   func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector)
     -> Bool
   {

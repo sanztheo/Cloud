@@ -163,10 +163,8 @@ extension SpotlightViewController {
   }
 
   @objc func searchFieldChanged() {
-    viewModel.searchQuery = searchField.stringValue
-    if viewModel.isAskMode {
-      viewModel.askQuestion = searchField.stringValue
-    }
+    // This is now handled by controlTextDidChange for instant updates
+    // Kept as fallback for programmatic changes
     updateResults()
     updateIcon()
     updateAskBadge()
