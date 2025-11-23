@@ -33,6 +33,10 @@
 ### 🤖 IA Intégrée
 - **Summarize Page** - Résumez n'importe quelle page web avec l'IA (OpenAI)
 - **Ask About WebPage** - Posez des questions à l'IA sur la page actuelle
+- **🆕 AI Search** - Recherche sémantique dans votre historique en langage naturel
+  - Tapez "articles sur React" et l'IA trouve les pages pertinentes
+  - Scoring de pertinence (% match) affiché pour chaque résultat
+  - Embeddings locaux pour une recherche rapide et privée
 - **Streaming en temps réel** - Voir la réponse s'écrire en direct
 - **Multi-langues** - Choisissez la langue du résumé (FR, EN, ES, DE, IT, JP, CN)
 - **Cache intelligent** - Les résumés sont mis en cache pour un accès instantané
@@ -144,6 +148,7 @@ Cloud/
 
 - [x] Summarize Page avec IA
 - [x] Ask About WebPage (questions à l'IA)
+- [x] **🆕 AI Search** - Recherche sémantique dans l'historique
 - [x] Thèmes personnalisables par Space
 - [x] Persistance des Spaces
 - [x] Multi-langues pour les résumés
