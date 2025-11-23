@@ -15,19 +15,24 @@
 ## ✨ Fonctionnalités
 
 ### 🎯 Navigation Intelligente
-- **Spotlight Search** - Recherche rapide style macOS avec suggestions Google prioritaires
+- **Spotlight Search** - Recherche rapide style macOS avec suggestions intelligentes
+- **Smart Autocomplete** - Fuzzy matching + scoring frecency (fréquence × récence)
+- **Inline Autocomplete** - Suggestions URL en temps réel (tapez "linke" → "linkedin.com")
 - **Focus permanent** - Le champ de recherche reste toujours accessible (style Arc)
 - **Navigation fluide** - WebKit optimisé pour des performances maximales
 
 ### 🗂️ Organisation
 - **Spaces** - Organisez vos onglets par contexte (Personnel, Travail, etc.)
+- **Folders** - Groupez vos onglets dans des dossiers (drag & drop, style Arc)
+- **Onglets épinglés** - Sites favoris protégés (Ctrl+W ne les ferme pas)
+- **Onglets protégés** - Les onglets dans folders sont protégés de la fermeture accidentelle
 - **Thèmes personnalisables** - Mode Light/Dark par Space avec couleurs personnalisées
 - **Sidebar dynamique** - Accès rapide à vos onglets avec favicons automatiques
-- **Onglets épinglés** - Gardez vos sites favoris toujours accessibles
-- **Persistance des Spaces** - Vos espaces sont sauvegardés automatiquement
+- **Persistance complète** - Spaces, folders et onglets sauvegardés automatiquement
 
 ### 🤖 IA Intégrée
 - **Summarize Page** - Résumez n'importe quelle page web avec l'IA (OpenAI)
+- **Ask About WebPage** - Posez des questions à l'IA sur la page actuelle
 - **Streaming en temps réel** - Voir la réponse s'écrire en direct
 - **Multi-langues** - Choisissez la langue du résumé (FR, EN, ES, DE, IT, JP, CN)
 - **Cache intelligent** - Les résumés sont mis en cache pour un accès instantané
@@ -103,17 +108,21 @@ Le projet est structuré en architecture MVVM avec SwiftUI:
 
 ```
 Cloud/
-├── Models/          # Modèles de données (Tab, Space, Bookmark, SpaceTheme)
+├── Models/          # Modèles de données (Tab, Space, Bookmark, Folder, SpaceTheme)
 ├── ViewModels/      # Logique métier (BrowserViewModel)
 ├── Views/           # Interface SwiftUI
 │   ├── BrowserView.swift
 │   ├── SummaryView.swift
 │   ├── SidebarView.swift
-│   └── Spotlight/
+│   ├── Components/
+│   │   └── FolderRowView.swift
+│   └── Spotlight/   # Spotlight avec autocomplete intelligent
 ├── Services/        # Services utilitaires
 │   ├── OpenAIService.swift
 │   ├── SummaryCacheService.swift
 │   └── OptimizedWebKitConfig.swift
+├── Utilities/       # Utilitaires
+│   └── FrecencyCalculator.swift
 ├── Extensions/      # Extensions Swift
 │   └── Color+Hex.swift
 └── Resources/       # Assets et configurations
@@ -134,11 +143,16 @@ Cloud/
 ## 🎯 Roadmap
 
 - [x] Summarize Page avec IA
+- [x] Ask About WebPage (questions à l'IA)
 - [x] Thèmes personnalisables par Space
 - [x] Persistance des Spaces
 - [x] Multi-langues pour les résumés
 - [x] Gestionnaire de téléchargements avec progression en temps réel
 - [x] Historique de navigation avec recherche et filtres
+- [x] Folders pour organiser les onglets (style Arc)
+- [x] Smart Autocomplete avec fuzzy matching et frecency
+- [x] Inline autocomplete pour les URLs
+- [x] Onglets protégés (pinnés et dans folders)
 - [ ] Synchronisation iCloud
 - [ ] Extensions de navigateur
 - [ ] Profils utilisateurs
