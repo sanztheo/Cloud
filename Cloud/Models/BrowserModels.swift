@@ -221,6 +221,7 @@ struct SearchResult: Identifiable {
   let url: URL?
   let tabId: UUID?
   let favicon: NSImage?
+  let matchScore: Int?  // AI search match percentage (0-100)
 
   init(
     id: UUID = UUID(),
@@ -229,7 +230,8 @@ struct SearchResult: Identifiable {
     subtitle: String,
     url: URL? = nil,
     tabId: UUID? = nil,
-    favicon: NSImage? = nil
+    favicon: NSImage? = nil,
+    matchScore: Int? = nil
   ) {
     self.id = id
     self.type = type
@@ -238,5 +240,6 @@ struct SearchResult: Identifiable {
     self.url = url
     self.tabId = tabId
     self.favicon = favicon
+    self.matchScore = matchScore
   }
 }

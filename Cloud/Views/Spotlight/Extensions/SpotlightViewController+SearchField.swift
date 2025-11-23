@@ -305,8 +305,9 @@ extension SpotlightViewController: NSSearchFieldDelegate {
             SearchResult(
               type: .history,
               title: ragResult.document.title,
-              subtitle: "\(ragResult.document.url) • \(Int(ragResult.score * 100))% match",
-              url: URL(string: ragResult.document.url)
+              subtitle: ragResult.document.url,
+              url: URL(string: ragResult.document.url),
+              matchScore: Int(ragResult.score * 100)
             )
           })
         }

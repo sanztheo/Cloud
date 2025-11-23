@@ -279,7 +279,7 @@ class SpotlightCellView: NSTableCellView {
       }
     }
 
-    // Configure badge - show "Switch to Tab" for existing tabs only
+    // Configure badge - show "Switch to Tab" for tabs, or match score for AI results
     if result.type == .tab {
       badgeContainer.isHidden = false
       badgeLabel.stringValue = "Switch to Tab"
@@ -290,6 +290,20 @@ class SpotlightCellView: NSTableCellView {
       } else {
         badgeContainer.layer?.backgroundColor = selectionColor.withAlphaComponent(0.2).cgColor
         badgeLabel.textColor = selectionColor
+      }
+    } else if let matchScore = result.matchScore {
+      // Show match percentage badge for AI search results
+      badgeContainer.isHidden = false
+      badgeLabel.stringValue = "\(matchScore)% match"
+
+      // Use blue color for AI match badge
+      let aiColor = NSColor(red: 0.145, green: 0.545, blue: 1.0, alpha: 1.0)
+      if isSelected {
+        badgeContainer.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.15).cgColor
+        badgeLabel.textColor = .white
+      } else {
+        badgeContainer.layer?.backgroundColor = aiColor.withAlphaComponent(0.2).cgColor
+        badgeLabel.textColor = aiColor
       }
     } else {
       badgeContainer.isHidden = true
