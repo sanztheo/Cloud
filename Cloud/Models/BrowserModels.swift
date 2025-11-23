@@ -19,6 +19,8 @@ struct BrowserTab: Identifiable, Equatable, Codable {
   var canGoForward: Bool
   var isPinned: Bool
   var spaceId: UUID
+  var folderId: UUID?
+  var sortOrder: Int
 
   init(
     id: UUID = UUID(),
@@ -29,7 +31,9 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     canGoBack: Bool = false,
     canGoForward: Bool = false,
     isPinned: Bool = false,
-    spaceId: UUID
+    spaceId: UUID,
+    folderId: UUID? = nil,
+    sortOrder: Int = 0
   ) {
     self.id = id
     self.url = url
@@ -40,11 +44,13 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     self.canGoForward = canGoForward
     self.isPinned = isPinned
     self.spaceId = spaceId
+    self.folderId = folderId
+    self.sortOrder = sortOrder
   }
 
   // Custom coding keys to exclude favicon (NSImage is not Codable) and isLoading (runtime state)
   enum CodingKeys: String, CodingKey {
-    case id, url, title, canGoBack, canGoForward, isPinned, spaceId
+    case id, url, title, canGoBack, canGoForward, isPinned, spaceId, folderId, sortOrder
     // Note: isLoading is excluded - it's a runtime state, not persisted
   }
 
@@ -58,6 +64,8 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     canGoForward = try container.decode(Bool.self, forKey: .canGoForward)
     isPinned = try container.decode(Bool.self, forKey: .isPinned)
     spaceId = try container.decode(UUID.self, forKey: .spaceId)
+    folderId = try container.decodeIfPresent(UUID.self, forKey: .folderId)
+    sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
     // Runtime state - not persisted
     favicon = nil
     isLoading = false
@@ -99,6 +107,29 @@ struct Space: Identifiable, Equatable, Codable {
   // Custom coding keys to exclude computed property
   enum CodingKeys: String, CodingKey {
     case id, name, icon, colorHex, theme
+  }
+}
+
+// MARK: - Tab Folder Model
+struct TabFolder: Identifiable, Equatable, Codable {
+  let id: UUID
+  var name: String
+  var isExpanded: Bool
+  var spaceId: UUID
+  var sortOrder: Int
+
+  init(
+    id: UUID = UUID(),
+    name: String = "New Folder",
+    isExpanded: Bool = true,
+    spaceId: UUID,
+    sortOrder: Int = 0
+  ) {
+    self.id = id
+    self.name = name
+    self.isExpanded = isExpanded
+    self.spaceId = spaceId
+    self.sortOrder = sortOrder
   }
 }
 

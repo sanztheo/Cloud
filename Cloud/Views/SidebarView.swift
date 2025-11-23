@@ -156,20 +156,37 @@ struct SidebarView: View {
   private func tabsListContent(for spaceId: UUID) -> some View {
     ScrollView(.vertical, showsIndicators: false) {
       VStack(spacing: 4) {
+        // Pinned tabs section
         let pinnedTabs = viewModel.pinnedTabsForSpace(spaceId)
         if !pinnedTabs.isEmpty {
           pinnedTabsSection(pinnedTabs)
         }
 
-        let unpinnedTabs = viewModel.unpinnedTabsForSpace(spaceId)
-        ForEach(unpinnedTabs) { tab in
+        // Folders section
+        ForEach(viewModel.foldersForSpace(spaceId)) { folder in
+          FolderRowView(
+            viewModel: viewModel,
+            folder: folder,
+            textColor: textColor,
+            secondaryTextColor: secondaryTextColor
+          )
+        }
+
+        // Ungrouped tabs
+        ForEach(viewModel.ungroupedTabsForSpace(spaceId)) { tab in
           tabRow(tab)
+            .draggable(tab.id.uuidString)
         }
       }
       .padding(.horizontal, 8)
       .padding(.vertical, 8)
     }
     .scrollContentBackground(.hidden)
+    .contextMenu {
+      Button("New Folder") {
+        _ = viewModel.createFolder(in: spaceId)
+      }
+    }
   }
 
   var body: some View {
@@ -448,6 +465,31 @@ struct SidebarView: View {
         ForEach(viewModel.spaces) { space in
           Button(space.name) {
             viewModel.moveTab(tab.id, toSpace: space.id)
+          }
+        }
+      }
+
+      if !viewModel.foldersForSpace(tab.spaceId).isEmpty || tab.folderId != nil {
+        Divider()
+
+        if tab.folderId != nil {
+          Button("Remove from Folder") {
+            viewModel.moveTabToFolder(tab.id, folderId: nil)
+          }
+        }
+
+        Menu("Move to Folder") {
+          ForEach(viewModel.foldersForSpace(tab.spaceId)) { folder in
+            Button(folder.name) {
+              viewModel.moveTabToFolder(tab.id, folderId: folder.id)
+            }
+          }
+
+          Divider()
+
+          Button("New Folder") {
+            let folder = viewModel.createFolder(in: tab.spaceId)
+            viewModel.moveTabToFolder(tab.id, folderId: folder.id)
           }
         }
       }
