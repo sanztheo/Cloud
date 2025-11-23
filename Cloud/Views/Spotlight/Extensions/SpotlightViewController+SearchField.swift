@@ -21,6 +21,68 @@ extension SpotlightViewController: NSSearchFieldDelegate {
     updateResults()
     updateIcon()
     updateAskBadge()
+
+    // Update inline autocomplete
+    updateInlineAutocomplete()
+  }
+
+  func updateInlineAutocomplete() {
+    let query = searchField.stringValue.lowercased()
+    currentAutocomplete = ""
+
+    guard !query.isEmpty && !viewModel.isAskMode else {
+      return
+    }
+
+    // Don't autocomplete if query has spaces (it's a search, not URL)
+    guard !query.contains(" ") else {
+      return
+    }
+
+    // Check if we have results
+    guard !searchResults.isEmpty else {
+      return
+    }
+
+    // Find first history/tab/bookmark result (skip commands and search suggestions)
+    let urlResult = searchResults.first { result in
+      result.type == .history || result.type == .tab || result.type == .bookmark || result.type == .website
+    }
+
+    guard let firstResult = urlResult, let resultURL = firstResult.url else {
+      return
+    }
+
+    let resultHost = resultURL.host?.lowercased() ?? ""
+
+    // Check if domain starts with user's query (e.g., "linke" -> "linkedin.com")
+    if resultHost.hasPrefix(query) && resultHost != query {
+      // Extract the remainder after what user typed
+      let remainder = String(resultHost.dropFirst(query.count))
+      if !remainder.isEmpty {
+        currentAutocomplete = remainder
+      }
+    }
+  }
+
+  func applyAutocomplete() {
+    guard !currentAutocomplete.isEmpty else {
+      return
+    }
+
+    let currentQuery = searchField.stringValue
+    searchField.stringValue = currentQuery + currentAutocomplete
+
+    // Move cursor to end
+    if let editor = searchField.currentEditor() as? NSTextView {
+      editor.setSelectedRange(NSRange(location: searchField.stringValue.count, length: 0))
+    }
+
+    // Update everything
+    viewModel.searchQuery = searchField.stringValue
+    updateResults()
+    updateIcon()
+    currentAutocomplete = ""
   }
 
   func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector)
@@ -34,12 +96,33 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       // Escape key
       close()
       return true
+    } else if commandSelector == #selector(NSResponder.insertTab(_:)) {
+      // Tab key - accept autocomplete
+      if !currentAutocomplete.isEmpty {
+        applyAutocomplete()
+        return true
+      }
+      return false
+    } else if commandSelector == #selector(NSResponder.moveRight(_:)) {
+      // Right arrow - accept autocomplete if at end of text
+      let query = searchField.stringValue
+      if let editor = textView as? NSTextView, !currentAutocomplete.isEmpty {
+        let selectedRange = editor.selectedRange
+        if selectedRange.location == query.count {
+          // Cursor is at end, accept autocomplete
+          applyAutocomplete()
+          return true
+        }
+      }
+      return false
     } else if commandSelector == #selector(NSResponder.deleteBackward(_:)) {
       // Backspace key - exit Ask mode if field is empty
       if viewModel.isAskMode && searchField.stringValue.isEmpty {
         exitAskMode()
         return true
       }
+      // Clear autocomplete on backspace
+      currentAutocomplete = ""
       return false
     } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
       // Down arrow - navigate table while keeping focus in search field (Arc-style)

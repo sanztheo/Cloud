@@ -49,6 +49,15 @@ extension SpotlightViewController {
       cell.searchButtonCell = nil
     }
 
+    // Autocomplete hint label (overlay for gray text)
+    autocompleteLabel = NSTextField()
+    autocompleteLabel.isEditable = false
+    autocompleteLabel.isBordered = false
+    autocompleteLabel.drawsBackground = false
+    autocompleteLabel.font = .systemFont(ofSize: 20, weight: .regular)
+    autocompleteLabel.textColor = .tertiaryLabelColor
+    autocompleteLabel.translatesAutoresizingMaskIntoConstraints = false
+
     // Table view
     tableView = SpotlightTableView()
     tableView.delegate = self
@@ -83,6 +92,7 @@ extension SpotlightViewController {
     searchContainer.translatesAutoresizingMaskIntoConstraints = false
     searchField.translatesAutoresizingMaskIntoConstraints = false
     searchContainer.addSubview(searchField)
+    searchContainer.addSubview(autocompleteLabel)
 
     // Icon Image View
     iconImageView = NSImageView()
@@ -133,6 +143,11 @@ extension SpotlightViewController {
       searchField.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -20),
       searchField.firstBaselineAnchor.constraint(equalTo: askBadgeLabel.firstBaselineAnchor),
       searchField.heightAnchor.constraint(equalToConstant: 32),
+
+      // Autocomplete label positioned right after search field
+      autocompleteLabel.leadingAnchor.constraint(equalTo: searchField.leadingAnchor),
+      autocompleteLabel.centerYAnchor.constraint(equalTo: searchField.centerYAnchor),
+      autocompleteLabel.heightAnchor.constraint(equalToConstant: 32),
 
       searchContainer.heightAnchor.constraint(equalToConstant: 68),
     ])

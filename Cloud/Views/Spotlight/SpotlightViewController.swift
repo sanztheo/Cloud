@@ -19,7 +19,13 @@ class SpotlightViewController: NSViewController {
   var tableView: SpotlightTableView!
   var scrollView: NSScrollView!
   var containerView: NSVisualEffectView!
+  var autocompleteLabel: NSTextField!
   var searchResults: [SearchResult] = []
+  var currentAutocomplete: String = "" {
+    didSet {
+      updateAutocompleteDisplay()
+    }
+  }
 
   override func loadView() {
     let rootView = SpotlightRootView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -149,6 +155,43 @@ class SpotlightViewController: NSViewController {
     updateAskBadge()
     updateIcon()
     updateResults()
+  }
+
+  func updateAutocompleteDisplay() {
+    if currentAutocomplete.isEmpty {
+      autocompleteLabel.stringValue = ""
+      autocompleteLabel.isHidden = true
+    } else {
+      autocompleteLabel.isHidden = false
+
+      // Create attributed string with user's text in CLEAR color (invisible spacer)
+      // followed by the autocomplete suggestion in gray
+      let query = searchField.stringValue
+      let attributedString = NSMutableAttributedString()
+
+      // User typed part - CLEAR color to act as invisible spacer
+      let userPart = NSAttributedString(
+        string: query,
+        attributes: [
+          .foregroundColor: NSColor.clear,
+          .font: NSFont.systemFont(ofSize: 20, weight: .regular),
+        ]
+      )
+
+      // Autocomplete part (gray) - this is what the user sees
+      let autocompletePart = NSAttributedString(
+        string: currentAutocomplete,
+        attributes: [
+          .foregroundColor: NSColor.tertiaryLabelColor,
+          .font: NSFont.systemFont(ofSize: 20, weight: .regular),
+        ]
+      )
+
+      attributedString.append(userPart)
+      attributedString.append(autocompletePart)
+
+      autocompleteLabel.attributedStringValue = attributedString
+    }
   }
 
   func close() {

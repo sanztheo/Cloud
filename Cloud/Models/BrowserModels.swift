@@ -162,17 +162,44 @@ struct HistoryEntry: Identifiable, Codable {
   let url: URL
   let title: String
   let visitDate: Date
+  var visitCount: Int
+  var lastVisitDate: Date
+  var typedCount: Int
 
   init(
     id: UUID = UUID(),
     url: URL,
     title: String,
-    visitDate: Date = Date()
+    visitDate: Date = Date(),
+    visitCount: Int = 1,
+    lastVisitDate: Date? = nil,
+    typedCount: Int = 0
   ) {
     self.id = id
     self.url = url
     self.title = title
     self.visitDate = visitDate
+    self.visitCount = visitCount
+    self.lastVisitDate = lastVisitDate ?? visitDate
+    self.typedCount = typedCount
+  }
+
+  // Computed property for frecency score
+  var frecencyScore: Double {
+    FrecencyCalculator.calculateScore(
+      visitCount: visitCount,
+      lastVisitDate: lastVisitDate,
+      typedCount: typedCount
+    )
+  }
+
+  // Helper method to increment visit count
+  mutating func recordVisit(typed: Bool = false) {
+    visitCount += 1
+    lastVisitDate = Date()
+    if typed {
+      typedCount += 1
+    }
   }
 }
 

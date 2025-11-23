@@ -227,17 +227,39 @@ class BrowserViewModel: ObservableObject {
     guard let tab = tabs.first(where: { $0.id == tabId }) else { return }
     let closedTabSpaceId = tab.spaceId
 
-    // Remove WebView and KVO observation
+    // Protected tabs: pinned tabs and tabs in folders cannot be closed with Ctrl+W
+    // They stay open - user just gets redirected to another tab or Welcome screen
+    let isProtected = tab.isPinned || tab.folderId != nil
+
+    if isProtected {
+      // Don't delete the tab, just switch to another ungrouped tab or Welcome
+      if activeTabId == tabId {
+        let ungroupedTabsInSpace = tabs.filter {
+          $0.spaceId == closedTabSpaceId && $0.folderId == nil && !$0.isPinned && $0.id != tabId
+        }
+        if let nextTab = ungroupedTabsInSpace.first {
+          activeTabId = nextTab.id
+        } else {
+          activeTabId = nil
+        }
+      }
+      return
+    }
+
+    // Remove WebView and KVO observation for non-protected tabs
     webViews.removeValue(forKey: tabId)
     loadingObservations.removeValue(forKey: tabId)
     tabs.removeAll { $0.id == tabId }
 
-    // Update active tab - only select tabs from the SAME space
+    // Update active tab - only select UNGROUPED, NON-PINNED tabs
     if activeTabId == tabId {
-      let tabsInSameSpace = tabs.filter { $0.spaceId == closedTabSpaceId }
-      if let nextTab = tabsInSameSpace.first {
+      let availableTabs = tabs.filter {
+        $0.spaceId == closedTabSpaceId && $0.folderId == nil && !$0.isPinned
+      }
+      if let nextTab = availableTabs.first {
         activeTabId = nextTab.id
       } else {
+        // No available tabs left - show Welcome screen
         activeTabId = nil
       }
     }
@@ -717,7 +739,34 @@ class BrowserViewModel: ObservableObject {
       }
     }
 
-    // 2. Add search suggestion (second if URL, first otherwise)
+    // 2. Collect high-quality history matches with fuzzy matching and frecency scoring
+    var historyMatches: [(score: Int, result: SearchResult)] = []
+    for entry in history.prefix(100) {
+      let matchScore = smartMatchScore(query: lowercasedQuery, entry: entry)
+      if matchScore > 0 {
+        let frecencyScore = calculateFrecencyScore(for: entry)
+        let totalScore = matchScore + frecencyScore
+
+        historyMatches.append((
+          score: totalScore,
+          result: SearchResult(
+            type: .history,
+            title: entry.title,
+            subtitle: entry.url.host ?? entry.url.absoluteString,
+            url: entry.url
+          )
+        ))
+      }
+    }
+
+    // Sort history matches by combined score (highest first)
+    historyMatches.sort { $0.score > $1.score }
+
+    // Add top history matches BEFORE search suggestions
+    let topHistoryMatches = historyMatches.prefix(5).map { $0.result }
+    results.append(contentsOf: topHistoryMatches)
+
+    // 3. Add search suggestion
     let searchUrl = URL(
       string:
         "https://www.google.com/search?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
@@ -730,56 +779,176 @@ class BrowserViewModel: ObservableObject {
         url: searchUrl
       ))
 
-    // 3. Add Google suggestions (skip if matches the first search result)
+    // 4. Add Google suggestions (skip if matches the first search result)
     for suggestion in suggestions where suggestion.title.lowercased() != lowercasedQuery {
       results.append(suggestion)
     }
 
-    // 4. Search history
-    for entry in history.prefix(20)
-    where entry.title.lowercased().contains(lowercasedQuery)
-      || entry.url.absoluteString.lowercased().contains(lowercasedQuery)
-    {
-      results.append(
-        SearchResult(
-          type: .history,
-          title: entry.title,
-          subtitle: entry.url.host ?? entry.url.absoluteString,
-          url: entry.url
+    // 5. Search tabs (only in current space)
+    var tabMatches: [(score: Int, result: SearchResult)] = []
+    for tab in spaceTabs {
+      let matchScore = smartMatchScore(query: lowercasedQuery, tab: tab)
+      if matchScore > 0 {
+        tabMatches.append((
+          score: matchScore,
+          result: SearchResult(
+            type: .tab,
+            title: tab.title,
+            subtitle: tab.url.host ?? tab.url.absoluteString,
+            url: tab.url,
+            tabId: tab.id,
+            favicon: tab.favicon
+          )
         ))
+      }
     }
 
-    // 5. Search tabs (only in current space)
-    for tab in spaceTabs
-    where tab.title.lowercased().contains(lowercasedQuery)
-      || tab.url.absoluteString.lowercased().contains(lowercasedQuery)
-    {
-      results.append(
-        SearchResult(
-          type: .tab,
-          title: tab.title,
-          subtitle: tab.url.host ?? tab.url.absoluteString,
-          url: tab.url,
-          tabId: tab.id,
-          favicon: tab.favicon
-        ))
-    }
+    tabMatches.sort { $0.score > $1.score }
+    results.append(contentsOf: tabMatches.map { $0.result })
 
     // 6. Search bookmarks
-    for bookmark in bookmarks
-    where bookmark.title.lowercased().contains(lowercasedQuery)
-      || bookmark.url.absoluteString.lowercased().contains(lowercasedQuery)
-    {
-      results.append(
-        SearchResult(
-          type: .bookmark,
-          title: bookmark.title,
-          subtitle: bookmark.url.host ?? bookmark.url.absoluteString,
-          url: bookmark.url
+    var bookmarkMatches: [(score: Int, result: SearchResult)] = []
+    for bookmark in bookmarks {
+      let matchScore = smartMatchScore(query: lowercasedQuery, bookmark: bookmark)
+      if matchScore > 0 {
+        bookmarkMatches.append((
+          score: matchScore,
+          result: SearchResult(
+            type: .bookmark,
+            title: bookmark.title,
+            subtitle: bookmark.url.host ?? bookmark.url.absoluteString,
+            url: bookmark.url
+          )
         ))
+      }
     }
 
+    bookmarkMatches.sort { $0.score > $1.score }
+    results.append(contentsOf: bookmarkMatches.map { $0.result })
+
     return results
+  }
+
+  // MARK: - Smart Matching & Scoring
+
+  private func smartMatchScore(query: String, entry: HistoryEntry) -> Int {
+    let domain = entry.url.host?.lowercased() ?? ""
+    let path = entry.url.path.lowercased()
+    let fullUrl = entry.url.absoluteString.lowercased()
+    let title = entry.title.lowercased()
+
+    return calculateMatchScore(
+      query: query,
+      domain: domain,
+      path: path,
+      fullUrl: fullUrl,
+      title: title
+    )
+  }
+
+  private func smartMatchScore(query: String, tab: BrowserTab) -> Int {
+    let domain = tab.url.host?.lowercased() ?? ""
+    let path = tab.url.path.lowercased()
+    let fullUrl = tab.url.absoluteString.lowercased()
+    let title = tab.title.lowercased()
+
+    return calculateMatchScore(
+      query: query,
+      domain: domain,
+      path: path,
+      fullUrl: fullUrl,
+      title: title
+    )
+  }
+
+  private func smartMatchScore(query: String, bookmark: Bookmark) -> Int {
+    let domain = bookmark.url.host?.lowercased() ?? ""
+    let path = bookmark.url.path.lowercased()
+    let fullUrl = bookmark.url.absoluteString.lowercased()
+    let title = bookmark.title.lowercased()
+
+    return calculateMatchScore(
+      query: query,
+      domain: domain,
+      path: path,
+      fullUrl: fullUrl,
+      title: title
+    )
+  }
+
+  private func calculateMatchScore(
+    query: String, domain: String, path: String, fullUrl: String, title: String
+  ) -> Int {
+    // Exact prefix match on domain (highest priority)
+    if domain.hasPrefix(query) {
+      return 90
+    }
+
+    // Substring match in domain (e.g., "linke" matches "linkedin.com")
+    if domain.contains(query) {
+      return 80
+    }
+
+    // Fuzzy match in domain
+    if fuzzyMatch(pattern: query, text: domain) {
+      return 70
+    }
+
+    // Match in path
+    if path.contains(query) {
+      return 50
+    }
+
+    // Fuzzy match in full URL
+    if fuzzyMatch(pattern: query, text: fullUrl) {
+      return 40
+    }
+
+    // Match in title
+    if title.contains(query) {
+      return 30
+    }
+
+    // Fuzzy match in title
+    if fuzzyMatch(pattern: query, text: title) {
+      return 20
+    }
+
+    return 0
+  }
+
+  private func fuzzyMatch(pattern: String, text: String) -> Bool {
+    var patternIndex = pattern.startIndex
+
+    for char in text {
+      if patternIndex < pattern.endIndex && char == pattern[patternIndex] {
+        patternIndex = pattern.index(after: patternIndex)
+      }
+    }
+
+    return patternIndex == pattern.endIndex
+  }
+
+  private func calculateFrecencyScore(for entry: HistoryEntry) -> Int {
+    let now = Date()
+    let daysSinceVisit = Calendar.current.dateComponents([.day], from: entry.visitDate, to: now).day ?? 0
+
+    // Recency boost: recent visits score higher
+    let recencyScore: Int
+    switch daysSinceVisit {
+    case 0:
+      recencyScore = 10  // Today
+    case 1:
+      recencyScore = 8   // Yesterday
+    case 2...6:
+      recencyScore = 5   // This week
+    case 7...30:
+      recencyScore = 2   // This month
+    default:
+      recencyScore = 0   // Older
+    }
+
+    return recencyScore
   }
 
   func selectSearchResult(_ result: SearchResult) {
