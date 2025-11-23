@@ -19,8 +19,13 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       viewModel.askQuestion = searchField.stringValue
     }
 
-    // In AI mode, don't update results on keystroke (wait for Enter)
-    if !viewModel.isAISearchMode {
+    // In AI mode: clear results when query becomes empty (allows new search)
+    if viewModel.isAISearchMode {
+      if searchField.stringValue.isEmpty {
+        viewModel.clearAIResults()
+        updateResults()
+      }
+    } else {
       updateResults()
     }
 
