@@ -122,12 +122,11 @@ struct FolderRowView: View {
 
             // Folder contents (tabs)
             if folder.isExpanded {
-                VStack(spacing: 2) {
+                VStack(spacing: 4) {
                     ForEach(viewModel.tabsInFolder(folder.id)) { tab in
                         folderTabRow(tab)
                     }
                 }
-                .padding(.leading, 20)
                 .padding(.top, 2)
             }
         }
@@ -182,30 +181,34 @@ struct FolderRowView: View {
                 Image(nsImage: favicon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 14, height: 14)
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                    .frame(width: 16, height: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
             } else {
                 Image(systemName: "globe")
-                    .font(.system(size: 10))
+                    .font(.system(size: 12))
                     .foregroundColor(secondaryTextColor)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 16, height: 16)
             }
 
             // Title
             Text(tab.title)
-                .font(.system(size: 11))
+                .font(.system(size: 12))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .foregroundColor(textColor)
 
             Spacer()
 
-            // Close button on hover
-            if hoveredTabId == tab.id {
+            // Loading indicator or close button
+            if tab.isLoading {
+                ProgressView()
+                    .scaleEffect(0.5)
+                    .frame(width: 16, height: 16)
+            } else if hoveredTabId == tab.id {
                 Image(systemName: "xmark")
-                    .font(.system(size: 7, weight: .bold))
+                    .font(.system(size: 8, weight: .bold))
                     .foregroundColor(secondaryTextColor)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 16, height: 16)
                     .background(Color.black.opacity(0.2))
                     .clipShape(Circle())
                     .onTapGesture {
@@ -213,14 +216,15 @@ struct FolderRowView: View {
                     }
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: 6)
                 .fill(
                     viewModel.activeTabId == tab.id
-                        ? Color.black.opacity(0.15)
-                        : (hoveredTabId == tab.id ? Color.black.opacity(0.08) : Color.clear)
+                        ? Color.black.opacity(0.2)
+                        : (hoveredTabId == tab.id ? Color.black.opacity(0.1) : Color.clear)
                 )
         )
         .contentShape(Rectangle())

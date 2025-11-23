@@ -163,7 +163,8 @@ struct SidebarView: View {
         }
 
         // Folders section
-        ForEach(viewModel.foldersForSpace(spaceId)) { folder in
+        let folders = viewModel.foldersForSpace(spaceId)
+        ForEach(folders) { folder in
           FolderRowView(
             viewModel: viewModel,
             folder: folder,
@@ -172,8 +173,15 @@ struct SidebarView: View {
           )
         }
 
+        // Divider between folders and tabs
+        let ungroupedTabs = viewModel.ungroupedTabsForSpace(spaceId)
+        if !folders.isEmpty && !ungroupedTabs.isEmpty {
+          Divider()
+            .padding(.vertical, 4)
+        }
+
         // Ungrouped tabs
-        ForEach(viewModel.ungroupedTabsForSpace(spaceId)) { tab in
+        ForEach(ungroupedTabs) { tab in
           tabRow(tab)
             .draggable(tab.id.uuidString)
         }
