@@ -54,6 +54,7 @@ struct SidebarView: View {
   @State private var hoveredSpaceId: UUID?
   @State private var isHoveringAddSpace: Bool = false
   @State private var isHoveringHistory: Bool = false
+  @State private var isHoveringClearDivider: Bool = false
   @State private var isAddingSpace: Bool = false
   @State private var isEditingSpace: Space?
   @State private var isEditingAddress: Bool = false
@@ -173,11 +174,36 @@ struct SidebarView: View {
           )
         }
 
-        // Divider between folders and tabs
+        // Divider between folders and tabs with Clear button
         let ungroupedTabs = viewModel.ungroupedTabsForSpace(spaceId)
-        if !folders.isEmpty && !ungroupedTabs.isEmpty {
-          Divider()
-            .padding(.vertical, 4)
+        if !ungroupedTabs.isEmpty {
+          HStack(spacing: 8) {
+            Rectangle()
+              .fill(secondaryTextColor.opacity(0.3))
+              .frame(height: 1)
+
+            if isHoveringClearDivider {
+              Button(action: {
+                // Close all ungrouped tabs in this space
+                for tab in ungroupedTabs {
+                  viewModel.closeTab(tab.id)
+                }
+              }) {
+                Text("Clear")
+                  .font(.system(size: 11))
+                  .foregroundColor(secondaryTextColor)
+              }
+              .buttonStyle(.plain)
+              .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+          }
+          .padding(.vertical, 8)
+          .contentShape(Rectangle())
+          .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+              isHoveringClearDivider = hovering
+            }
+          }
         }
 
         // Ungrouped tabs
