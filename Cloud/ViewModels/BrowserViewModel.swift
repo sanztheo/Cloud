@@ -246,6 +246,25 @@ class BrowserViewModel: ObservableObject {
     saveTabs()
   }
 
+  func clearUngroupedTabs(in spaceId: UUID) {
+    let ungroupedTabs = tabs.filter { $0.spaceId == spaceId && $0.folderId == nil && !$0.isPinned }
+    let wasActiveInUngrouped = ungroupedTabs.contains { $0.id == activeTabId }
+
+    // Close all ungrouped tabs
+    for tab in ungroupedTabs {
+      webViews.removeValue(forKey: tab.id)
+      loadingObservations.removeValue(forKey: tab.id)
+    }
+    tabs.removeAll { $0.spaceId == spaceId && $0.folderId == nil && !$0.isPinned }
+
+    // If active tab was among cleared tabs, show Welcome screen (don't switch to folder tabs)
+    if wasActiveInUngrouped {
+      activeTabId = nil
+    }
+
+    saveTabs()
+  }
+
   func selectTab(_ tabId: UUID) {
     // Determine transition direction based on tab index
     if let currentTabId = activeTabId,

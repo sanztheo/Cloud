@@ -184,10 +184,8 @@ struct SidebarView: View {
 
             if isHoveringClearDivider {
               Button(action: {
-                // Close all ungrouped tabs in this space
-                for tab in ungroupedTabs {
-                  viewModel.closeTab(tab.id)
-                }
+                // Close all ungrouped tabs - creates new tab if active was among them
+                viewModel.clearUngroupedTabs(in: spaceId)
               }) {
                 Text("Clear")
                   .font(.system(size: 11))
