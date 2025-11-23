@@ -120,14 +120,23 @@ struct FolderRowView: View {
                 isTargeted = targeted
             }
 
-            // Folder contents (tabs)
+            // Folder contents (tabs) - indented to show hierarchy
             if folder.isExpanded {
                 VStack(spacing: 4) {
                     ForEach(viewModel.tabsInFolder(folder.id)) { tab in
-                        folderTabRow(tab)
+                        HStack(spacing: 0) {
+                            // Indent line to show hierarchy
+                            Rectangle()
+                                .fill(secondaryTextColor.opacity(0.3))
+                                .frame(width: 2)
+                                .padding(.leading, 12)
+                                .padding(.trailing, 8)
+
+                            folderTabRow(tab)
+                        }
                     }
                 }
-                .padding(.top, 2)
+                .padding(.top, 4)
             }
         }
         .onAppear {
