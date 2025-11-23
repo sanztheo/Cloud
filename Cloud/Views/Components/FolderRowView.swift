@@ -131,6 +131,20 @@ struct FolderRowView: View {
                 .padding(.top, 2)
             }
         }
+        .onAppear {
+            // Auto-start editing if this folder was just created
+            if viewModel.editingFolderId == folder.id {
+                viewModel.editingFolderId = nil
+                startEditing()
+            }
+        }
+        .onChange(of: viewModel.editingFolderId) { _, newValue in
+            // Handle case where editingFolderId is set after view appeared
+            if newValue == folder.id {
+                viewModel.editingFolderId = nil
+                startEditing()
+            }
+        }
     }
 
     // MARK: - Rename Helpers

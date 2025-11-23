@@ -19,6 +19,7 @@ class BrowserViewModel: ObservableObject {
   @Published var bookmarks: [Bookmark] = []
   @Published var history: [HistoryEntry] = []
   @Published var folders: [TabFolder] = []
+  @Published var editingFolderId: UUID?  // Folder to auto-edit after creation
   @Published var isSpotlightVisible: Bool = false
   @Published var isSidebarCollapsed: Bool = false
   @Published var isHistoryPanelVisible: Bool = false
@@ -1027,11 +1028,15 @@ class BrowserViewModel: ObservableObject {
 
   // MARK: - Folder Management
 
-  func createFolder(in spaceId: UUID, name: String = "New Folder") -> TabFolder {
+  func createFolder(in spaceId: UUID, name: String = "New Folder", startEditing: Bool = true) -> TabFolder {
     let maxOrder = folders.filter { $0.spaceId == spaceId }.map { $0.sortOrder }.max() ?? -1
     let folder = TabFolder(name: name, spaceId: spaceId, sortOrder: maxOrder + 1)
     folders.append(folder)
     saveFolders()
+    // Trigger edit mode for the new folder
+    if startEditing {
+      editingFolderId = folder.id
+    }
     return folder
   }
 

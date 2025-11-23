@@ -488,7 +488,7 @@ struct SidebarView: View {
           Divider()
 
           Button("New Folder") {
-            let folder = viewModel.createFolder(in: tab.spaceId)
+            let folder = viewModel.createFolder(in: tab.spaceId, startEditing: false)
             viewModel.moveTabToFolder(tab.id, folderId: folder.id)
           }
         }
