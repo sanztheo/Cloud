@@ -9,6 +9,7 @@
 
 import AppKit
 import Foundation
+import SwiftUI
 
 // MARK: - Tab Management
 extension BrowserViewModel {

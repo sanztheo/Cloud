@@ -9,6 +9,7 @@
 
 import Foundation
 import SwiftUI
+import WebKit
 
 // MARK: - Summary Methods
 extension BrowserViewModel {
