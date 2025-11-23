@@ -119,12 +119,41 @@ extension SpotlightViewController {
     askBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
     askBadgeContainer.addSubview(askBadgeLabel)
 
+    // AI Search badge (appears when semantic search is detected)
+    aiBadgeContainer = NSView()
+    aiBadgeContainer.wantsLayer = true
+    aiBadgeContainer.layer?.cornerRadius = 10
+    aiBadgeContainer.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.18).cgColor
+    aiBadgeContainer.translatesAutoresizingMaskIntoConstraints = false
+    aiBadgeContainer.isHidden = true
+    aiBadgeContainer.alphaValue = 0
+    searchContainer.addSubview(aiBadgeContainer)
+
+    // AI badge label with sparkle icon
+    aiBadgeLabel = NSTextField(labelWithString: "AI Search")
+    aiBadgeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+    aiBadgeLabel.textColor = NSColor.systemBlue
+    aiBadgeLabel.alignment = .center
+    aiBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
+    aiBadgeContainer.addSubview(aiBadgeLabel)
+
+    // Loading indicator for AI search
+    aiLoadingIndicator = NSProgressIndicator()
+    aiLoadingIndicator.style = .spinning
+    aiLoadingIndicator.controlSize = .small
+    aiLoadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+    aiLoadingIndicator.isDisplayedWhenStopped = false
+    aiBadgeContainer.addSubview(aiLoadingIndicator)
+
     searchFieldLeadingToIcon = searchField.leadingAnchor.constraint(
       equalTo: iconImageView.trailingAnchor, constant: 12)
     searchFieldLeadingToBadge = searchField.leadingAnchor.constraint(
       equalTo: askBadgeContainer.trailingAnchor, constant: 12)
+    searchFieldLeadingToAIBadge = searchField.leadingAnchor.constraint(
+      equalTo: aiBadgeContainer.trailingAnchor, constant: 12)
     searchFieldLeadingToIcon.isActive = true
     searchFieldLeadingToBadge.isActive = false
+    searchFieldLeadingToAIBadge.isActive = false
 
     NSLayoutConstraint.activate([
       iconImageView.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 20),
@@ -139,6 +168,20 @@ extension SpotlightViewController {
       askBadgeLabel.trailingAnchor.constraint(equalTo: askBadgeContainer.trailingAnchor, constant: -10),
       askBadgeLabel.topAnchor.constraint(equalTo: askBadgeContainer.topAnchor, constant: 5),
       askBadgeLabel.bottomAnchor.constraint(equalTo: askBadgeContainer.bottomAnchor, constant: -5),
+
+      // AI badge constraints
+      aiBadgeContainer.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 12),
+      aiBadgeContainer.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
+
+      aiLoadingIndicator.leadingAnchor.constraint(equalTo: aiBadgeContainer.leadingAnchor, constant: 8),
+      aiLoadingIndicator.centerYAnchor.constraint(equalTo: aiBadgeContainer.centerYAnchor),
+      aiLoadingIndicator.widthAnchor.constraint(equalToConstant: 14),
+      aiLoadingIndicator.heightAnchor.constraint(equalToConstant: 14),
+
+      aiBadgeLabel.leadingAnchor.constraint(equalTo: aiLoadingIndicator.trailingAnchor, constant: 4),
+      aiBadgeLabel.trailingAnchor.constraint(equalTo: aiBadgeContainer.trailingAnchor, constant: -10),
+      aiBadgeLabel.topAnchor.constraint(equalTo: aiBadgeContainer.topAnchor, constant: 5),
+      aiBadgeLabel.bottomAnchor.constraint(equalTo: aiBadgeContainer.bottomAnchor, constant: -5),
 
       searchField.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -20),
       searchField.firstBaselineAnchor.constraint(equalTo: askBadgeLabel.firstBaselineAnchor),
@@ -183,17 +226,27 @@ extension SpotlightViewController {
     updateResults()
     updateIcon()
     updateAskBadge()
+    updateAIBadge()
   }
 
   func updateResults() {
     guard let viewModel = viewModel else { return }
-    searchResults = viewModel.searchResults(for: searchField.stringValue)
+
+    // Get results based on mode
+    if viewModel.isAISearchMode {
+      // In AI mode: show AI results (populated after Enter)
+      searchResults = viewModel.aiSearchResults
+    } else {
+      // Normal mode: show standard results
+      searchResults = viewModel.searchResults(for: searchField.stringValue)
+    }
+
     tableView.reloadData()
 
     // Update scroll view visibility
     scrollView.isHidden = searchResults.isEmpty
 
-    // Always select first row when there are results (Arc/Spotlight behavior)
+    // Select first row when there are results
     if !searchResults.isEmpty {
       tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
     }
@@ -203,8 +256,10 @@ extension SpotlightViewController {
     let resultsHeight: CGFloat =
       searchResults.isEmpty ? 0 : min(CGFloat(searchResults.count) * 70 + 16, 400)
 
-    containerView.constraints.first { $0.firstAttribute == .height }?.isActive = false
-    containerView.heightAnchor.constraint(equalToConstant: baseHeight + resultsHeight).isActive =
-      true
+    containerView.constraints.filter { $0.firstAttribute == .height }.forEach { $0.isActive = false }
+    containerView.heightAnchor.constraint(equalToConstant: baseHeight + resultsHeight).isActive = true
+
+    // Update AI badge
+    updateAIBadge()
   }
 }

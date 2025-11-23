@@ -54,6 +54,10 @@ class BrowserViewModel: ObservableObject {
   let suggestionsService = GoogleSuggestionsService()
   @Published var suggestions: [SearchResult] = []
 
+  // MARK: - AI Search State
+  var _isAISearchMode: Bool = false
+  var _aiSearchResults: [SearchResult] = []
+
   // MARK: - Services
   let openAIService = OpenAIService()
   let cacheService = SummaryCacheService.shared
@@ -77,6 +81,11 @@ class BrowserViewModel: ObservableObject {
     loadPersistedData()
     setupSearchSubscriptions()
     setupDownloadNotifications()
+
+    // Index history for semantic search after a short delay
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+      self?.indexHistoryForSemanticSearch()
+    }
   }
 
   func setupDownloadNotifications() {

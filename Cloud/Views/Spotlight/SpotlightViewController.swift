@@ -14,13 +14,18 @@ class SpotlightViewController: NSViewController {
   var iconImageView: NSImageView!
   var askBadgeContainer: NSView!
   var askBadgeLabel: NSTextField!
+  var aiBadgeContainer: NSView!
+  var aiBadgeLabel: NSTextField!
+  var aiLoadingIndicator: NSProgressIndicator!
   var searchFieldLeadingToIcon: NSLayoutConstraint!
   var searchFieldLeadingToBadge: NSLayoutConstraint!
+  var searchFieldLeadingToAIBadge: NSLayoutConstraint!
   var tableView: SpotlightTableView!
   var scrollView: NSScrollView!
   var containerView: NSVisualEffectView!
   var autocompleteLabel: NSTextField!
   var searchResults: [SearchResult] = []
+
   var currentAutocomplete: String = "" {
     didSet {
       updateAutocompleteDisplay()
@@ -50,6 +55,7 @@ class SpotlightViewController: NSViewController {
     // Update icon based on context
     updateIcon()
     updateAskBadge()
+    updateAIBadge()
 
     // Auto-focus search field and select all text
     view.window?.makeFirstResponder(searchField)
@@ -83,6 +89,7 @@ class SpotlightViewController: NSViewController {
   }
 
   private var wasInAskMode = false
+  private var wasInAIMode = false
 
   func updateAskBadge() {
     guard askBadgeContainer != nil,
@@ -157,6 +164,98 @@ class SpotlightViewController: NSViewController {
     updateResults()
   }
 
+  func exitAISearchMode() {
+    viewModel.resetAISearch()
+    searchField.stringValue = ""
+    viewModel.searchQuery = ""
+    updateAIBadge()
+    updateIcon()
+    updateResults()
+  }
+
+  func updateAIBadge() {
+    guard aiBadgeContainer != nil,
+          searchFieldLeadingToIcon != nil,
+          searchFieldLeadingToAIBadge != nil else { return }
+
+    // Don't show AI badge if Ask mode is active
+    guard !(viewModel?.isAskMode ?? false) else {
+      aiBadgeContainer.isHidden = true
+      aiBadgeContainer.alphaValue = 0
+      return
+    }
+
+    let shouldShowBadge = viewModel?.isAISearchMode ?? false
+
+    // Detect transition into AI mode for glow animation
+    let justEnteredAIMode = shouldShowBadge && !wasInAIMode
+    wasInAIMode = shouldShowBadge
+
+    aiBadgeContainer.isHidden = !shouldShowBadge
+    aiBadgeContainer.alphaValue = shouldShowBadge ? 1 : 0
+
+    // Update placeholder when AI mode is active
+    if shouldShowBadge {
+      searchField.placeholderString = "Describe what you're looking for..."
+    } else if !(viewModel?.isAskMode ?? false) {
+      searchField.placeholderString = "Search or enter URL..."
+    }
+
+    // Update badge label
+    let resultCount = searchResults.count
+    if viewModel?.isAISearchMode == true && resultCount > 0 {
+      aiBadgeLabel.stringValue = "AI Search • \(resultCount)"
+    } else {
+      aiBadgeLabel.stringValue = "AI Search"
+    }
+
+    // Update constraints only if Ask mode is not active
+    if !(viewModel?.isAskMode ?? false) {
+      searchFieldLeadingToIcon.isActive = !shouldShowBadge
+      searchFieldLeadingToAIBadge.isActive = shouldShowBadge
+    }
+
+    view.layoutSubtreeIfNeeded()
+
+    // Trigger glow animation when entering AI mode
+    if justEnteredAIMode {
+      animateAIBadgeGlow()
+    }
+  }
+
+  func animateAIBadgeGlow() {
+    guard let layer = containerView.layer else { return }
+
+    let originalShadowColor = layer.shadowColor
+    let originalShadowOpacity = layer.shadowOpacity
+    let originalShadowRadius = layer.shadowRadius
+
+    // Blue glow for AI mode
+    let glowColor = NSColor.systemBlue.cgColor
+
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    layer.shadowColor = glowColor
+    layer.shadowOpacity = 1.0
+    layer.shadowRadius = 60
+    layer.shadowOffset = .zero
+    CATransaction.commit()
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      NSAnimationContext.runAnimationGroup { context in
+        context.duration = 0.4
+        context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+
+        CATransaction.begin()
+        layer.shadowColor = originalShadowColor
+        layer.shadowOpacity = originalShadowOpacity
+        layer.shadowRadius = originalShadowRadius
+        layer.shadowOffset = CGSize(width: 0, height: -15)
+        CATransaction.commit()
+      }
+    }
+  }
+
   func updateAutocompleteDisplay() {
     if currentAutocomplete.isEmpty {
       autocompleteLabel.stringValue = ""
@@ -195,6 +294,7 @@ class SpotlightViewController: NSViewController {
   }
 
   func close() {
+    viewModel.resetAISearch()
     viewModel.isSpotlightVisible = false
   }
 }

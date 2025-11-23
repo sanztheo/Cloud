@@ -18,7 +18,7 @@ extension BrowserViewModel {
       .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
       .removeDuplicates()
       .flatMap { [weak self] query -> AnyPublisher<[String], Never> in
-        guard let self = self, !query.isEmpty, !self.isAskMode else {
+        guard let self = self, !query.isEmpty, !self.isAskMode, !self.isAISearchMode else {
           return Just([]).eraseToAnyPublisher()
         }
         return self.suggestionsService.fetchSuggestions(for: query)
@@ -73,6 +73,7 @@ extension BrowserViewModel {
     suggestions = []
     isAskMode = false
     askQuestion = ""
+    resetAISearch()
   }
 
   func activateAskMode() {
@@ -125,6 +126,28 @@ extension BrowserViewModel {
             favicon: nil
           ))
       }
+    }
+
+    // Add "Search History with AI" command
+    let aiSearchMatches =
+      query.isEmpty
+        || query.localizedCaseInsensitiveContains("search")
+        || query.localizedCaseInsensitiveContains("history")
+        || query.localizedCaseInsensitiveContains("ai")
+        || query.localizedCaseInsensitiveContains("find")
+        || query.localizedCaseInsensitiveContains("cherche")
+        || query.localizedCaseInsensitiveContains("historique")
+
+    if aiSearchMatches && EmbeddingService.shared.isAvailable {
+      results.append(
+        SearchResult(
+          type: .command,
+          title: "Search History with AI",
+          subtitle: "Find pages using natural language",
+          url: nil,
+          tabId: nil,
+          favicon: nil
+        ))
     }
 
     // Filter tabs by active space
@@ -398,6 +421,8 @@ extension BrowserViewModel {
     case .command:
       if result.title == "Ask About WebPage" {
         activateAskMode()
+      } else if result.title == "Search History with AI" {
+        activateAISearchMode()
       } else {
         // Handle Summarize Page command
         hideSpotlight()

@@ -11,19 +11,26 @@ import AppKit
 extension SpotlightViewController: NSSearchFieldDelegate {
   // Called on every keystroke - instant updates
   func controlTextDidChange(_ obj: Notification) {
-    // Clear old suggestions immediately so "Search Google" appears instantly
+    // Clear old suggestions immediately
     viewModel.suggestions = []
 
     viewModel.searchQuery = searchField.stringValue
     if viewModel.isAskMode {
       viewModel.askQuestion = searchField.stringValue
     }
-    updateResults()
+
+    // In AI mode, don't update results on keystroke (wait for Enter)
+    if !viewModel.isAISearchMode {
+      updateResults()
+    }
+
     updateIcon()
     updateAskBadge()
 
-    // Update inline autocomplete
-    updateInlineAutocomplete()
+    // Update inline autocomplete (not in AI mode)
+    if !viewModel.isAISearchMode {
+      updateInlineAutocomplete()
+    }
   }
 
   func updateInlineAutocomplete() {
@@ -57,7 +64,6 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     // Check if domain starts with user's query (e.g., "linke" -> "linkedin.com")
     if resultHost.hasPrefix(query) && resultHost != query {
-      // Extract the remainder after what user typed
       let remainder = String(resultHost.dropFirst(query.count))
       if !remainder.isEmpty {
         currentAutocomplete = remainder
@@ -73,12 +79,10 @@ extension SpotlightViewController: NSSearchFieldDelegate {
     let currentQuery = searchField.stringValue
     searchField.stringValue = currentQuery + currentAutocomplete
 
-    // Move cursor to end
     if let editor = searchField.currentEditor() as? NSTextView {
       editor.setSelectedRange(NSRange(location: searchField.stringValue.count, length: 0))
     }
 
-    // Update everything
     viewModel.searchQuery = searchField.stringValue
     updateResults()
     updateIcon()
@@ -89,83 +93,78 @@ extension SpotlightViewController: NSSearchFieldDelegate {
     -> Bool
   {
     if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-      // Enter key
       handleEnter()
       return true
     } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-      // Escape key
+      // Escape - if in AI mode with results, clear results first
+      if viewModel.isAISearchMode && !searchResults.isEmpty {
+        viewModel.clearAIResults()
+        updateResults()
+        return true
+      }
       close()
       return true
     } else if commandSelector == #selector(NSResponder.insertTab(_:)) {
-      // Tab key - accept autocomplete
       if !currentAutocomplete.isEmpty {
         applyAutocomplete()
         return true
       }
       return false
     } else if commandSelector == #selector(NSResponder.moveRight(_:)) {
-      // Right arrow - accept autocomplete if at end of text
       let query = searchField.stringValue
       if let editor = textView as? NSTextView, !currentAutocomplete.isEmpty {
         let selectedRange = editor.selectedRange
         if selectedRange.location == query.count {
-          // Cursor is at end, accept autocomplete
           applyAutocomplete()
           return true
         }
       }
       return false
     } else if commandSelector == #selector(NSResponder.deleteBackward(_:)) {
-      // Backspace key - exit Ask mode if field is empty
+      // Backspace - exit Ask mode if field is empty
       if viewModel.isAskMode && searchField.stringValue.isEmpty {
         exitAskMode()
         return true
       }
-      // Clear autocomplete on backspace
+      // Backspace - exit AI Search mode if field is empty
+      if viewModel.isAISearchMode && searchField.stringValue.isEmpty {
+        exitAISearchMode()
+        return true
+      }
       currentAutocomplete = ""
       return false
     } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
-      // Down arrow - navigate table while keeping focus in search field (Arc-style)
       if !searchResults.isEmpty {
         let currentRow = tableView.selectedRow
         let nextRow: Int
 
         if currentRow < 0 {
-          // No selection yet, select first row
           nextRow = 0
         } else if currentRow < searchResults.count - 1 {
-          // Move to next row
           nextRow = currentRow + 1
         } else {
-          // Already at last row, stay there
           nextRow = currentRow
         }
 
         tableView.selectRowIndexes(IndexSet(integer: nextRow), byExtendingSelection: false)
         tableView.scrollRowToVisible(nextRow)
-        // Focus stays in searchField automatically
       }
       return true
     } else if commandSelector == #selector(NSResponder.moveUp(_:)) {
-      // Up arrow - navigate table while keeping focus in search field (Arc-style)
       if !searchResults.isEmpty {
         let currentRow = tableView.selectedRow
         let previousRow: Int
 
         if currentRow < 0 {
-          // No selection yet, select last row
           previousRow = searchResults.count - 1
         } else if currentRow > 0 {
-          // Move to previous row
           previousRow = currentRow - 1
         } else {
-          // Already at first row, stay there
           previousRow = currentRow
         }
 
         tableView.selectRowIndexes(IndexSet(integer: previousRow), byExtendingSelection: false)
         tableView.scrollRowToVisible(previousRow)
-        // Focus stays in searchField automatically
       }
       return true
     }
@@ -177,7 +176,7 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     let query = searchField.stringValue
 
-    // If Ask mode is active, bypass normal navigation and send question to OpenAI
+    // Ask mode - send question to AI
     if viewModel.isAskMode {
       let question = query.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !question.isEmpty else { return }
@@ -188,14 +187,33 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       return
     }
 
-    // Get selected row, default to first row (0) if nothing selected
+    // AI Search mode - perform search or select result
+    if viewModel.isAISearchMode {
+      // If we have results and one is selected, navigate to it
+      if !searchResults.isEmpty {
+        let selectedRow = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
+        if let url = searchResults[selectedRow].url {
+          viewModel.createNewTab(url: url)
+          close()
+          return
+        }
+      }
+
+      // Otherwise, perform the AI search
+      let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !trimmedQuery.isEmpty {
+        performAISearch(query: trimmedQuery)
+      }
+      return
+    }
+
+    // Normal mode
     let selectedRow = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
 
-    // If we have results, use the selected one
     if !searchResults.isEmpty && selectedRow < searchResults.count {
       let selectedResult = searchResults[selectedRow]
 
-      // Special handling: "Ask About WebPage" should keep Spotlight open to capture the question
+      // Special handling: "Ask About WebPage"
       if selectedResult.type == .command && selectedResult.title == "Ask About WebPage" {
         viewModel.selectSearchResult(selectedResult)
         searchField.stringValue = ""
@@ -205,7 +223,18 @@ extension SpotlightViewController: NSSearchFieldDelegate {
         updateAskBadge()
         updateIcon()
         view.window?.makeFirstResponder(searchField)
-        searchField.currentEditor()?.selectAll(nil)
+        return
+      }
+
+      // Special handling: "Search History with AI"
+      if selectedResult.type == .command && selectedResult.title == "Search History with AI" {
+        viewModel.selectSearchResult(selectedResult)
+        searchField.stringValue = ""
+        viewModel.searchQuery = ""
+        updateResults()
+        updateAIBadge()
+        updateIcon()
+        view.window?.makeFirstResponder(searchField)
         return
       }
 
@@ -237,5 +266,33 @@ extension SpotlightViewController: NSSearchFieldDelegate {
       }
     }
     close()
+  }
+
+  // MARK: - AI Search
+
+  private func performAISearch(query: String) {
+    Task { @MainActor in
+      do {
+        let results = try await LocalRAGService.shared.semanticSearch(
+          naturalQuery: query,
+          limit: 10
+        )
+
+        // Convert to SearchResult and update
+        viewModel.setAIResults(results.map { ragResult in
+          SearchResult(
+            type: .history,
+            title: ragResult.document.title,
+            subtitle: "\(ragResult.document.url) • \(Int(ragResult.score * 100))% match",
+            url: URL(string: ragResult.document.url)
+          )
+        })
+
+        updateResults()
+
+      } catch {
+        print("AI Search error: \(error)")
+      }
+    }
   }
 }

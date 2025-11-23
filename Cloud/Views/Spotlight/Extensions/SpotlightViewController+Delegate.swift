@@ -35,7 +35,6 @@ extension SpotlightViewController: NSTableViewDelegate {
   }
 
   func tableViewSelectionDidChange(_ notification: Notification) {
-    // Reload visible cells to update selection state
     let visibleRows = tableView.rows(in: tableView.visibleRect)
     tableView.reloadData(
       forRowIndexes: IndexSet(integersIn: visibleRows.lowerBound..<visibleRows.upperBound),
