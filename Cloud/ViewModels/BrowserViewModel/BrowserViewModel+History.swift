@@ -38,9 +38,16 @@ extension BrowserViewModel {
   }
 
   func filteredHistory(searchText: String) -> [HistoryEntry] {
-    guard !searchText.isEmpty else { return history }
+    let currentUserId = SupabaseService.shared.currentUserId
+
+    // Filter by userId first (include entries with nil userId for legacy data or no userId for current user)
+    let userHistory = history.filter { entry in
+      entry.userId == currentUserId || (entry.userId == nil && currentUserId == nil)
+    }
+
+    guard !searchText.isEmpty else { return userHistory }
     let lowercased = searchText.lowercased()
-    return history.filter { entry in
+    return userHistory.filter { entry in
       entry.title.lowercased().contains(lowercased)
         || entry.url.absoluteString.lowercased().contains(lowercased)
     }
