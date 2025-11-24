@@ -92,16 +92,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     NSLog("🚀 Cloud App Started - Download debugging enabled")
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
       if let window = NSApp.windows.first {
-        // Make title bar transparent but keep native traffic lights
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-
-        // Ensure traffic lights are visible and functional
         window.standardWindowButton(.closeButton)?.isHidden = false
         window.standardWindowButton(.miniaturizeButton)?.isHidden = false
         window.standardWindowButton(.zoomButton)?.isHidden = false
 
-        // Maximize window to fill screen (not fullscreen)
         if let screen = window.screen ?? NSScreen.main {
           let visibleFrame = screen.visibleFrame
           window.setFrame(visibleFrame, display: true, animate: false)

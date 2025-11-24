@@ -16,7 +16,7 @@ struct DownloadsPanelView: View {
   // MARK: - Colors
 
   private var backgroundColor: Color {
-    theme?.sidebarBackground ?? AppColors.sidebarBackground
+    theme?.sidebarBackground ?? AppColors.defaultSidebarBackground
   }
 
   private var textColor: Color {

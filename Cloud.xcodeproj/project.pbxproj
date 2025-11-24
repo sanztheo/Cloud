@@ -33,9 +33,22 @@
 		AA5414352ECDD26A007B82F1 /* CloudUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CloudUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		AA1A55B92ED462D00007B2C9 /* Exceptions for "Cloud" folder in "Cloud" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = AA54141D2ECDD269007B82F1 /* Cloud */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AA5414202ECDD269007B82F1 /* Cloud */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA1A55B92ED462D00007B2C9 /* Exceptions for "Cloud" folder in "Cloud" target */,
+			);
 			path = Cloud;
 			sourceTree = "<group>";
 		};

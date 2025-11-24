@@ -11,7 +11,7 @@ struct AppColors {
   // MARK: - Couleurs principales
 
   /// Couleur de fond principale de l'application
-  static let background = Color(hex: "72B4FF")
+  static let defaultBackground = Color(hex: "72B4FF")
 
   // MARK: - Boutons de contrôle de fenêtre (Traffic Lights)
 
@@ -83,12 +83,12 @@ struct AppColors {
   // MARK: - Sidebar
 
   /// Fond de la sidebar (par défaut)
-  static let sidebarBackground = Color(hex: "72B4FF")
+  static let defaultSidebarBackground = Color(hex: "72B4FF")
 
   /// Fond de la sidebar basé sur un thème
   static func sidebarBackground(for theme: SpaceTheme?) -> Color {
     guard let theme = theme else {
-      return sidebarBackground
+      return defaultSidebarBackground
     }
     return theme.sidebarBackground
   }
@@ -96,7 +96,7 @@ struct AppColors {
   /// Couleur de fond dynamique basée sur un thème
   static func background(for theme: SpaceTheme?) -> Color {
     guard let theme = theme else {
-      return background
+      return defaultBackground
     }
     return theme.sidebarBackground
   }
@@ -115,6 +115,6 @@ struct AppColors {
 // MARK: - Extension pour faciliter l'utilisation
 
 extension Color {
-  static let appBackground = AppColors.background
-  static let appSidebar = AppColors.sidebarBackground
+  static let appBackground = AppColors.defaultBackground
+  static let appSidebar = AppColors.defaultSidebarBackground
 }

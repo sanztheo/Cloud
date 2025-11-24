@@ -10,7 +10,6 @@ import Auth
 
 struct RootView: View {
     @StateObject private var supabaseService = SupabaseService.shared
-    @State private var showTransition = false
 
     var body: some View {
         ZStack {
@@ -31,17 +30,11 @@ struct RootView: View {
 
             case .signedOut:
                 AuthContainerView()
-                    .transition(.asymmetric(
-                        insertion: .opacity.animation(.easeIn(duration: 0.3)),
-                        removal: .scale(scale: 0.95).combined(with: .opacity).animation(.easeOut(duration: 0.2))
-                    ))
+                    .transition(.opacity.animation(.easeIn(duration: 0.3)))
 
             case .signedIn:
                 BrowserView()
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 1.05).combined(with: .opacity).animation(.easeOut(duration: 0.3)),
-                        removal: .opacity.animation(.easeIn(duration: 0.2))
-                    ))
+                    .transition(.opacity.animation(.easeOut(duration: 0.3)))
             }
         }
         .animation(.default, value: supabaseService.authState.discriminator)
