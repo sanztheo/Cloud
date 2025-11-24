@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA1A55AB2ED45BDB0007B2C9 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AA1A55AA2ED45BDB0007B2C9 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		AA54142C2ECDD26A007B82F1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA1A55AB2ED45BDB0007B2C9 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +77,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AA1A55A92ED45BDB0007B2C9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		AA5414152ECDD269007B82F1 = {
 			isa = PBXGroup;
 			children = (
 				AA5414202ECDD269007B82F1 /* Cloud */,
 				AA54142E2ECDD26A007B82F1 /* CloudTests */,
 				AA5414382ECDD26A007B82F1 /* CloudUITests */,
+				AA1A55A92ED45BDB0007B2C9 /* Frameworks */,
 				AA54141F2ECDD269007B82F1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +125,7 @@
 			);
 			name = Cloud;
 			packageProductDependencies = (
+				AA1A55AA2ED45BDB0007B2C9 /* Supabase */,
 			);
 			productName = Cloud;
 			productReference = AA54141E2ECDD269007B82F1 /* Cloud.app */;
@@ -394,6 +408,8 @@
 		};
 		AA5414402ECDD26A007B82F1 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = AA5414202ECDD269007B82F1 /* Cloud */;
+			baseConfigurationReferenceRelativePath = Config/Debug.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -438,6 +454,8 @@
 		};
 		AA5414412ECDD26A007B82F1 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = AA5414202ECDD269007B82F1 /* Cloud */;
+			baseConfigurationReferenceRelativePath = Config/Release.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -611,6 +629,14 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA1A55AA2ED45BDB0007B2C9 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA2643812ED39811004EC589 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AA5414162ECDD269007B82F1 /* Project object */;
 }

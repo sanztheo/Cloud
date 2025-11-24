@@ -1,0 +1,6 @@
+// Debug.xcconfig
+// Configuration pour le mode Debug
+
+#include "Secrets.xcconfig"
+
+// Vous pouvez ajouter d'autres variables spécifiques au debug ici

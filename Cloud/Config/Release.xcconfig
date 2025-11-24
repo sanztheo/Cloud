@@ -1,0 +1,6 @@
+// Release.xcconfig
+// Configuration pour le mode Release
+
+#include "Secrets.xcconfig"
+
+// Vous pouvez ajouter d'autres variables spécifiques au release ici
