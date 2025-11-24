@@ -97,6 +97,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       if let window = NSApp.windows.first {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
+        window.styleMask.insert(.fullSizeContentView)
         window.standardWindowButton(.closeButton)?.isHidden = false
         window.standardWindowButton(.miniaturizeButton)?.isHidden = false
         window.standardWindowButton(.zoomButton)?.isHidden = false

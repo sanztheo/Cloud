@@ -30,7 +30,8 @@ struct RootView: View {
 
             case .signedOut:
                 AuthContainerView()
-                    .transition(.opacity.animation(.easeIn(duration: 0.3)))
+                    .ignoresSafeArea(.all)
+                    .transition(.opacity)
 
             case .signedIn:
                 BrowserView()
