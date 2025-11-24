@@ -21,6 +21,7 @@ struct BrowserTab: Identifiable, Equatable, Codable {
   var spaceId: UUID
   var folderId: UUID?
   var sortOrder: Int
+  var userId: String?  // User ID for data isolation
 
   init(
     id: UUID = UUID(),
@@ -33,7 +34,8 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     isPinned: Bool = false,
     spaceId: UUID,
     folderId: UUID? = nil,
-    sortOrder: Int = 0
+    sortOrder: Int = 0,
+    userId: String? = nil
   ) {
     self.id = id
     self.url = url
@@ -46,11 +48,12 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     self.spaceId = spaceId
     self.folderId = folderId
     self.sortOrder = sortOrder
+    self.userId = userId
   }
 
   // Custom coding keys to exclude favicon (NSImage is not Codable) and isLoading (runtime state)
   enum CodingKeys: String, CodingKey {
-    case id, url, title, canGoBack, canGoForward, isPinned, spaceId, folderId, sortOrder
+    case id, url, title, canGoBack, canGoForward, isPinned, spaceId, folderId, sortOrder, userId
     // Note: isLoading is excluded - it's a runtime state, not persisted
   }
 
@@ -66,6 +69,7 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     spaceId = try container.decode(UUID.self, forKey: .spaceId)
     folderId = try container.decodeIfPresent(UUID.self, forKey: .folderId)
     sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+    userId = try container.decodeIfPresent(String.self, forKey: .userId)
     // Runtime state - not persisted
     favicon = nil
     isLoading = false
@@ -83,6 +87,7 @@ struct Space: Identifiable, Equatable, Codable {
   var icon: String
   var colorHex: String  // Store as hex string for Codable
   var theme: SpaceTheme?
+  var userId: String?  // User ID for data isolation
 
   // Computed property for Color
   var color: Color {
@@ -95,18 +100,20 @@ struct Space: Identifiable, Equatable, Codable {
     name: String = "Personal",
     icon: String = "person.fill",
     color: Color = .blue,
-    theme: SpaceTheme? = nil
+    theme: SpaceTheme? = nil,
+    userId: String? = nil
   ) {
     self.id = id
     self.name = name
     self.icon = icon
     self.colorHex = color.toHex() ?? "#0066FF"
     self.theme = theme
+    self.userId = userId
   }
 
   // Custom coding keys to exclude computed property
   enum CodingKeys: String, CodingKey {
-    case id, name, icon, colorHex, theme
+    case id, name, icon, colorHex, theme, userId
   }
 }
 
@@ -117,19 +124,22 @@ struct TabFolder: Identifiable, Equatable, Codable {
   var isExpanded: Bool
   var spaceId: UUID
   var sortOrder: Int
+  var userId: String?  // User ID for data isolation
 
   init(
     id: UUID = UUID(),
     name: String = "New Folder",
     isExpanded: Bool = true,
     spaceId: UUID,
-    sortOrder: Int = 0
+    sortOrder: Int = 0,
+    userId: String? = nil
   ) {
     self.id = id
     self.name = name
     self.isExpanded = isExpanded
     self.spaceId = spaceId
     self.sortOrder = sortOrder
+    self.userId = userId
   }
 }
 
@@ -140,19 +150,22 @@ struct Bookmark: Identifiable, Codable {
   var title: String
   var dateAdded: Date
   var folderId: UUID?
+  var userId: String?  // User ID for data isolation
 
   init(
     id: UUID = UUID(),
     url: URL,
     title: String,
     dateAdded: Date = Date(),
-    folderId: UUID? = nil
+    folderId: UUID? = nil,
+    userId: String? = nil
   ) {
     self.id = id
     self.url = url
     self.title = title
     self.dateAdded = dateAdded
     self.folderId = folderId
+    self.userId = userId
   }
 }
 
@@ -165,6 +178,7 @@ struct HistoryEntry: Identifiable, Codable {
   var visitCount: Int
   var lastVisitDate: Date
   var typedCount: Int
+  var userId: String?  // User ID for data isolation
 
   init(
     id: UUID = UUID(),
@@ -173,7 +187,8 @@ struct HistoryEntry: Identifiable, Codable {
     visitDate: Date = Date(),
     visitCount: Int = 1,
     lastVisitDate: Date? = nil,
-    typedCount: Int = 0
+    typedCount: Int = 0,
+    userId: String? = nil
   ) {
     self.id = id
     self.url = url
@@ -182,6 +197,7 @@ struct HistoryEntry: Identifiable, Codable {
     self.visitCount = visitCount
     self.lastVisitDate = lastVisitDate ?? visitDate
     self.typedCount = typedCount
+    self.userId = userId
   }
 
   // Computed property for frecency score

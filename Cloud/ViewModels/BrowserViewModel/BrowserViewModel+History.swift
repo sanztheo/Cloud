@@ -14,7 +14,8 @@ import SwiftUI
 extension BrowserViewModel {
 
   func addToHistory(url: URL, title: String) {
-    let entry = HistoryEntry(url: url, title: title)
+    let currentUserId = SupabaseService.shared.currentUserId
+    let entry = HistoryEntry(url: url, title: title, userId: currentUserId)
     history.insert(entry, at: 0)
 
     // Keep only last 1000 entries

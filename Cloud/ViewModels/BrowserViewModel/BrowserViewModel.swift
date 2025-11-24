@@ -122,7 +122,8 @@ class BrowserViewModel: ObservableObject {
 
     // If no spaces exist, create default space
     if spaces.isEmpty {
-      let personalSpace = Space(name: "Personal", icon: "👤", color: .blue)
+      let currentUserId = SupabaseService.shared.currentUserId
+      let personalSpace = Space(name: "Personal", icon: "👤", color: .blue, userId: currentUserId)
       spaces = [personalSpace]
       activeSpaceId = personalSpace.id
       saveSpaces()

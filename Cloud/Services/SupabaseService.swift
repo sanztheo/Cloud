@@ -149,6 +149,11 @@ final class SupabaseService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
+    // MARK: - Current User ID
+    var currentUserId: String? {
+        currentUser?.id.uuidString
+    }
+
     private init() {
         Task {
             await checkSession()
@@ -178,10 +183,19 @@ final class SupabaseService: ObservableObject {
 
         do {
             let response = try await client.auth.signUp(email: email, password: password)
-            let user = response.user
-            currentUser = user
-            authState = .signedIn(user)
-            try await createUserProfile(userId: user.id, email: email)
+
+            // Check if email confirmation is required
+            if let session = response.session {
+                // User is auto-confirmed (email confirmation disabled in Supabase settings)
+                currentUser = session.user
+                authState = .signedIn(session.user)
+                try await createUserProfile(userId: session.user.id, email: email)
+            } else {
+                // Email confirmation required - user must verify email before signing in
+                currentUser = nil
+                authState = .signedOut
+                // Do not create profile yet - wait for email confirmation
+            }
         } catch {
             errorMessage = error.localizedDescription
             throw error
@@ -199,7 +213,13 @@ final class SupabaseService: ObservableObject {
             currentUser = session.user
             authState = .signedIn(session.user)
         } catch {
-            errorMessage = error.localizedDescription
+            let errorDesc = error.localizedDescription
+            // Provide a better error message for unconfirmed email
+            if errorDesc.contains("Email not confirmed") || errorDesc.contains("email_not_confirmed") {
+                errorMessage = "Please confirm your email before signing in. Check your inbox for the confirmation link."
+            } else {
+                errorMessage = errorDesc
+            }
             throw error
         }
     }

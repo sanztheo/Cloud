@@ -13,8 +13,9 @@ import Foundation
 extension BrowserViewModel {
 
   func createFolder(in spaceId: UUID, name: String = "New Folder", startEditing: Bool = true) -> TabFolder {
+    let currentUserId = SupabaseService.shared.currentUserId
     let maxOrder = folders.filter { $0.spaceId == spaceId }.map { $0.sortOrder }.max() ?? -1
-    let folder = TabFolder(name: name, spaceId: spaceId, sortOrder: maxOrder + 1)
+    let folder = TabFolder(name: name, spaceId: spaceId, sortOrder: maxOrder + 1, userId: currentUserId)
     folders.append(folder)
     saveFolders()
     // Trigger edit mode for the new folder

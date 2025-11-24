@@ -13,7 +13,8 @@ import Foundation
 extension BrowserViewModel {
 
   func addBookmark(url: URL, title: String) {
-    let bookmark = Bookmark(url: url, title: title)
+    let currentUserId = SupabaseService.shared.currentUserId
+    let bookmark = Bookmark(url: url, title: title, userId: currentUserId)
     bookmarks.append(bookmark)
     saveBookmarks()
   }

@@ -17,11 +17,13 @@ extension BrowserViewModel {
   func createNewTab(url: URL? = nil, inSpace spaceId: UUID? = nil) {
     let targetSpaceId = spaceId ?? activeSpaceId ?? spaces.first!.id
     let targetUrl = url ?? URL(string: "https://www.google.com")!
+    let currentUserId = SupabaseService.shared.currentUserId
 
     let newTab = BrowserTab(
       url: targetUrl,
       title: "New Tab",
-      spaceId: targetSpaceId
+      spaceId: targetSpaceId,
+      userId: currentUserId
     )
 
     tabs.append(newTab)

@@ -15,7 +15,8 @@ import WebKit
 extension BrowserViewModel {
 
   func createNewSpace(name: String, icon: String, color: Color, theme: SpaceTheme? = nil) {
-    let newSpace = Space(name: name, icon: icon, color: color, theme: theme)
+    let currentUserId = SupabaseService.shared.currentUserId
+    let newSpace = Space(name: name, icon: icon, color: color, theme: theme, userId: currentUserId)
     spaces.append(newSpace)
     saveSpaces()
   }
