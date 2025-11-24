@@ -119,10 +119,21 @@ struct SyncedBookmark: Codable, Identifiable {
 
 // MARK: - Auth State
 
-enum AuthState {
+enum AuthState: Equatable {
     case unknown
     case signedOut
     case signedIn(User)
+
+    static func == (lhs: AuthState, rhs: AuthState) -> Bool {
+        switch (lhs, rhs) {
+        case (.unknown, .unknown), (.signedOut, .signedOut):
+            return true
+        case let (.signedIn(user1), .signedIn(user2)):
+            return user1.id == user2.id
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Supabase Service

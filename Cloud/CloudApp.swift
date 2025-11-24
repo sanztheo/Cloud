@@ -13,7 +13,7 @@ struct CloudApp: App {
 
   var body: some Scene {
     WindowGroup {
-      BrowserView()
+      RootView()
     }
     .defaultSize(width: 1400, height: 900)
     .windowStyle(.hiddenTitleBar)

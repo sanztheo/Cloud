@@ -3,4 +3,6 @@
 
 #include "Secrets.xcconfig"
 
-// Vous pouvez ajouter d'autres variables spécifiques au release ici
+// Force l'utilisation du Info.plist custom
+GENERATE_INFOPLIST_FILE = NO
+INFOPLIST_FILE = Cloud/Info.plist

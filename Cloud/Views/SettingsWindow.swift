@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import Auth
 
 struct SettingsWindow: View {
     // MARK: - Properties
 
+    @StateObject private var supabaseService = SupabaseService.shared
     @AppStorage("openai_api_key") private var apiKey: String = ""
     @AppStorage("summary_language") private var summaryLanguage: String = "English"
     @State private var tempApiKey: String = ""
@@ -51,6 +53,12 @@ struct SettingsWindow: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // Account Section
+                    accountSection
+
+                    Divider()
+                        .padding(.horizontal, -20)
+
                     // OpenAI Configuration Section
                     openAISection
 
@@ -84,6 +92,68 @@ struct SettingsWindow: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+    }
+
+    // MARK: - Account Section
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            Label("Account", systemImage: "person.circle")
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            VStack(alignment: .leading, spacing: 12) {
+                // User Info
+                if case .signedIn(let user) = supabaseService.authState {
+                    HStack(spacing: 16) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.accentColor)
+                            .symbolRenderingMode(.hierarchical)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Email")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(user.email ?? "No email")
+                                .font(.body)
+                                .fontWeight(.medium)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+
+                    // Sign Out Button
+                    HStack {
+                        Button(action: handleSignOut) {
+                            HStack {
+                                Image(systemName: "arrow.right.square")
+                                Text("Se déconnecter")
+                            }
+                            .frame(minWidth: 120)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Spacer()
+                    }
+                    .padding(.top, 8)
+                } else {
+                    // Not signed in (shouldn't happen in settings)
+                    Text("Aucun compte connecté")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 20)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(8)
+                }
+            }
+        }
     }
 
     // MARK: - OpenAI Configuration Section
@@ -351,6 +421,22 @@ struct SettingsWindow: View {
                 isError = false
                 saveMessage = "Cache cleared successfully"
                 showSaveMessage = true
+            }
+        }
+    }
+
+    private func handleSignOut() {
+        Task {
+            do {
+                try await supabaseService.signOut()
+                // The RootView will automatically handle the navigation to login
+            } catch {
+                // Show error message
+                await MainActor.run {
+                    isError = true
+                    saveMessage = "Erreur lors de la déconnexion"
+                    showSaveMessage = true
+                }
             }
         }
     }
