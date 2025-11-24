@@ -125,4 +125,6 @@ extension Notification.Name {
   static let goForward = Notification.Name("goForward")
   static let reload = Notification.Name("reload")
   static let addBookmark = Notification.Name("addBookmark")
+  static let clearBrowserSession = Notification.Name("clearBrowserSession")
+  static let reloadUserData = Notification.Name("reloadUserData")
 }

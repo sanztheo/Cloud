@@ -190,6 +190,9 @@ final class SupabaseService: ObservableObject {
                 currentUser = session.user
                 authState = .signedIn(session.user)
                 try await createUserProfile(userId: session.user.id, email: email)
+
+                // Reload user-specific data for new user
+                NotificationCenter.default.post(name: .reloadUserData, object: nil)
             } else {
                 // Email confirmation required - user must verify email before signing in
                 currentUser = nil
@@ -212,6 +215,9 @@ final class SupabaseService: ObservableObject {
             let session = try await client.auth.signIn(email: email, password: password)
             currentUser = session.user
             authState = .signedIn(session.user)
+
+            // Reload user-specific data
+            NotificationCenter.default.post(name: .reloadUserData, object: nil)
         } catch {
             let errorDesc = error.localizedDescription
             // Provide a better error message for unconfirmed email
@@ -234,6 +240,9 @@ final class SupabaseService: ObservableObject {
             try await client.auth.signOut()
             currentUser = nil
             authState = .signedOut
+
+            // Clear all session data from BrowserViewModel
+            NotificationCenter.default.post(name: .clearBrowserSession, object: nil)
         } catch {
             errorMessage = error.localizedDescription
             throw error
@@ -257,6 +266,9 @@ final class SupabaseService: ObservableObject {
             if let user = currentUser {
                 try? await createUserProfile(userId: user.id, email: user.email)
             }
+
+            // Reload user-specific data
+            NotificationCenter.default.post(name: .reloadUserData, object: nil)
         } catch {
             errorMessage = error.localizedDescription
             throw error

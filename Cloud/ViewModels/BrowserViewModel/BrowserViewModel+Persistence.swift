@@ -119,6 +119,9 @@ extension BrowserViewModel {
       bookmarks = decoded.filter { bookmark in
         bookmark.userId == nil || bookmark.userId == currentUserId
       }
+    } else {
+      // No bookmarks found for this user - ensure array is empty
+      bookmarks = []
     }
   }
 
@@ -145,6 +148,9 @@ extension BrowserViewModel {
       history = decoded.filter { entry in
         entry.userId == nil || entry.userId == currentUserId
       }
+    } else {
+      // No history found for this user - ensure array is empty
+      history = []
     }
   }
 

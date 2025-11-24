@@ -81,11 +81,28 @@ class BrowserViewModel: ObservableObject {
     loadPersistedData()
     setupSearchSubscriptions()
     setupDownloadNotifications()
+    setupAuthNotifications()
 
     // Index history for semantic search after a short delay
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
       self?.indexHistoryForSemanticSearch()
     }
+  }
+
+  func setupAuthNotifications() {
+    // Listen for sign out - clear all session data
+    NotificationCenter.default.publisher(for: .clearBrowserSession)
+      .sink { [weak self] _ in
+        self?.clearSessionData()
+      }
+      .store(in: &cancellables)
+
+    // Listen for sign in - reload user data
+    NotificationCenter.default.publisher(for: .reloadUserData)
+      .sink { [weak self] _ in
+        self?.loadPersistedData()
+      }
+      .store(in: &cancellables)
   }
 
   func setupDownloadNotifications() {
