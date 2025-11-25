@@ -40,6 +40,7 @@ struct RAGMetadata: Codable {
     var lastVisited: Date?
     var spaceId: String?
     var isPinned: Bool?
+    var userId: String?
 }
 
 // MARK: - RAG Search Result
@@ -127,7 +128,7 @@ actor LocalRAGService {
             content: content,
             embedding: embedding,
             timestamp: entry.visitDate,
-            metadata: RAGMetadata(visitCount: 1, lastVisited: entry.visitDate)
+            metadata: RAGMetadata(visitCount: 1, lastVisited: entry.visitDate, userId: entry.userId)
         )
 
         await addOrUpdateDocument(document)
@@ -158,7 +159,7 @@ actor LocalRAGService {
                 content: content,
                 embedding: embedding,
                 timestamp: entry.visitDate,
-                metadata: RAGMetadata(visitCount: 1, lastVisited: entry.visitDate)
+                metadata: RAGMetadata(visitCount: 1, lastVisited: entry.visitDate, userId: entry.userId)
             )
 
             index.documents.removeAll { $0.id == documentId }
@@ -171,7 +172,7 @@ actor LocalRAGService {
         print("✅ Indexed \(newEntries.count) history entries for RAG")
     }
 
-    func search(query: String, limit: Int = 10, types: [RAGItemType]? = nil) async throws -> [RAGSearchResult] {
+    func search(query: String, limit: Int = 10, types: [RAGItemType]? = nil, userId: String? = nil) async throws -> [RAGSearchResult] {
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return []
         }
@@ -181,6 +182,9 @@ actor LocalRAGService {
         var filteredDocs = index.documents
         if let types = types {
             filteredDocs = filteredDocs.filter { types.contains($0.type) }
+        }
+        if let userId = userId {
+            filteredDocs = filteredDocs.filter { $0.metadata.userId == userId }
         }
 
         let results = filteredDocs.compactMap { doc -> RAGSearchResult? in
@@ -198,7 +202,7 @@ actor LocalRAGService {
         return results.sorted { $0.score > $1.score }.prefix(limit).map { $0 }
     }
 
-    func semanticSearch(naturalQuery: String, limit: Int = 10) async throws -> [RAGSearchResult] {
+    func semanticSearch(naturalQuery: String, limit: Int = 10, userId: String? = nil) async throws -> [RAGSearchResult] {
         let intent = detectQueryIntent(naturalQuery)
 
         var typeFilter: [RAGItemType]? = nil
@@ -210,7 +214,7 @@ actor LocalRAGService {
             typeFilter = [.bookmark]
         }
 
-        return try await search(query: naturalQuery, limit: limit, types: typeFilter)
+        return try await search(query: naturalQuery, limit: limit, types: typeFilter, userId: userId)
     }
 
     func getStats() -> (total: Int, history: Int, tabs: Int, bookmarks: Int) {

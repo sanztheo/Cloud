@@ -220,5 +220,11 @@ extension BrowserViewModel {
     history.removeAll()
     activeTabId = nil
     activeSpaceId = nil
+
+    // Clear RAG index
+    Task {
+      await LocalRAGService.shared.clearIndex()
+      print("✅ Cleared RAG index on sign out")
+    }
   }
 }

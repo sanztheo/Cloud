@@ -49,13 +49,21 @@ extension BrowserViewModel {
 
   /// Index history for semantic search
   func indexHistoryForSemanticSearch() {
-    let recentHistory = Array(history.prefix(300))
+    // Filter history by current user BEFORE indexing
+    guard let currentUserId = SupabaseService.shared.currentUserId else {
+      print("⚠️ No current user, skipping history indexing")
+      return
+    }
+
+    let userHistory = history.filter { $0.userId == currentUserId }
+    let recentHistory = Array(userHistory.prefix(300))
+
     Task {
       do {
         try await LocalRAGService.shared.indexHistoryBatch(recentHistory)
-        print("Indexed \(recentHistory.count) history entries")
+        print("✅ Indexed \(recentHistory.count) history entries for user \(currentUserId)")
       } catch {
-        print("Failed to index history: \(error)")
+        print("❌ Failed to index history: \(error)")
       }
     }
   }

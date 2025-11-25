@@ -286,9 +286,13 @@ extension SpotlightViewController: NSSearchFieldDelegate {
 
     Task { @MainActor in
       do {
+        // Get current user ID for filtering
+        let currentUserId = SupabaseService.shared.currentUserId
+
         let results = try await LocalRAGService.shared.semanticSearch(
           naturalQuery: query,
-          limit: 10
+          limit: 10,
+          userId: currentUserId
         )
 
         // Stop thinking animation
