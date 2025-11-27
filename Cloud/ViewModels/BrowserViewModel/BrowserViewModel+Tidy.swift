@@ -16,10 +16,7 @@ extension BrowserViewModel {
   var shouldShowTidy: Bool {
     guard let spaceId = activeSpaceId else { return false }
     let uncategorizedTabs = tabs.filter {
-      $0.spaceId == spaceId &&
-      $0.folderId == nil &&
-      !$0.isPinned &&
-      $0.category == nil
+      $0.spaceId == spaceId && $0.folderId == nil && !$0.isPinned && $0.category == nil
     }
     return uncategorizedTabs.count >= 4
   }
@@ -29,9 +26,7 @@ extension BrowserViewModel {
   /// Categories are sorted alphabetically, with "Other" always last
   func groupedTabsByCategory(for spaceId: UUID) -> [(category: String, tabs: [BrowserTab])] {
     let ungroupedTabs = tabs.filter {
-      $0.spaceId == spaceId &&
-      $0.folderId == nil &&
-      !$0.isPinned
+      $0.spaceId == spaceId && $0.folderId == nil && !$0.isPinned
     }
 
     // Group tabs by category
@@ -57,29 +52,16 @@ extension BrowserViewModel {
   /// Returns tabs without a category for the given space
   func uncategorizedTabsForSpace(_ spaceId: UUID) -> [BrowserTab] {
     tabs.filter {
-      $0.spaceId == spaceId &&
-      $0.folderId == nil &&
-      !$0.isPinned &&
-      $0.category == nil
+      $0.spaceId == spaceId && $0.folderId == nil && !$0.isPinned && $0.category == nil
     }
   }
 
   /// Returns ungrouped (non-pinned, not in folder) tabs for the given space
-  func ungroupedTabsForSpace(_ spaceId: UUID) -> [BrowserTab] {
-    tabs.filter {
-      $0.spaceId == spaceId &&
-      $0.folderId == nil &&
-      !$0.isPinned
-    }
-  }
 
   /// Check if there are any categorized tabs in the space
   func hasCategorizedTabs(in spaceId: UUID) -> Bool {
     tabs.contains {
-      $0.spaceId == spaceId &&
-      $0.folderId == nil &&
-      !$0.isPinned &&
-      $0.category != nil
+      $0.spaceId == spaceId && $0.folderId == nil && !$0.isPinned && $0.category != nil
     }
   }
 
