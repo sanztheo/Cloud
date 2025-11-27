@@ -22,6 +22,7 @@ struct BrowserTab: Identifiable, Equatable, Codable {
   var folderId: UUID?
   var sortOrder: Int
   var userId: String?  // User ID for data isolation
+  var category: String?  // AI-assigned category for Tidy feature
 
   init(
     id: UUID = UUID(),
@@ -35,7 +36,8 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     spaceId: UUID,
     folderId: UUID? = nil,
     sortOrder: Int = 0,
-    userId: String? = nil
+    userId: String? = nil,
+    category: String? = nil
   ) {
     self.id = id
     self.url = url
@@ -49,11 +51,12 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     self.folderId = folderId
     self.sortOrder = sortOrder
     self.userId = userId
+    self.category = category
   }
 
   // Custom coding keys to exclude favicon (NSImage is not Codable) and isLoading (runtime state)
   enum CodingKeys: String, CodingKey {
-    case id, url, title, canGoBack, canGoForward, isPinned, spaceId, folderId, sortOrder, userId
+    case id, url, title, canGoBack, canGoForward, isPinned, spaceId, folderId, sortOrder, userId, category
     // Note: isLoading is excluded - it's a runtime state, not persisted
   }
 
@@ -70,6 +73,7 @@ struct BrowserTab: Identifiable, Equatable, Codable {
     folderId = try container.decodeIfPresent(UUID.self, forKey: .folderId)
     sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
     userId = try container.decodeIfPresent(String.self, forKey: .userId)
+    category = try container.decodeIfPresent(String.self, forKey: .category)
     // Runtime state - not persisted
     favicon = nil
     isLoading = false
