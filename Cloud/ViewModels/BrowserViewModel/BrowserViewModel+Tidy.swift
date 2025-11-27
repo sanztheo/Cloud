@@ -64,15 +64,6 @@ extension BrowserViewModel {
     }
   }
 
-  /// Returns ungrouped (non-pinned, not in folder) tabs for the given space
-  func ungroupedTabsForSpace(_ spaceId: UUID) -> [BrowserTab] {
-    tabs.filter {
-      $0.spaceId == spaceId &&
-      $0.folderId == nil &&
-      !$0.isPinned
-    }
-  }
-
   /// Check if there are any categorized tabs in the space
   func hasCategorizedTabs(in spaceId: UUID) -> Bool {
     tabs.contains {
