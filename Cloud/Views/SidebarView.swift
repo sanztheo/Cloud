@@ -181,9 +181,7 @@ struct SidebarView: View {
         let ungroupedTabs = viewModel.ungroupedTabsForSpace(spaceId)
         if !ungroupedTabs.isEmpty {
           HStack(spacing: 8) {
-            Rectangle()
-              .fill(secondaryTextColor.opacity(0.3))
-              .frame(height: 1)
+            WaveDivider(color: secondaryTextColor.opacity(0.3), isAnimating: isTidying)
 
             if isHoveringClearDivider {
               // Tidy button (visible if 4+ uncategorized tabs)
