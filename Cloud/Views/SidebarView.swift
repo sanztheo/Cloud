@@ -60,6 +60,9 @@ struct SidebarView: View {
   @State private var isEditingAddress: Bool = false
   @FocusState private var isAddressFocused: Bool
 
+  // Tidy feature state
+  @State private var isTidying: Bool = false
+
   // Download notification animation
   @State private var showDownloadBubble: Bool = false
   @State private var bubbleOffset: CGSize = CGSize(width: 100, height: -200)
@@ -174,7 +177,7 @@ struct SidebarView: View {
           )
         }
 
-        // Divider between folders and tabs with Clear button
+        // Divider between folders and tabs with Clear/Tidy buttons
         let ungroupedTabs = viewModel.ungroupedTabsForSpace(spaceId)
         if !ungroupedTabs.isEmpty {
           HStack(spacing: 8) {
@@ -183,6 +186,30 @@ struct SidebarView: View {
               .frame(height: 1)
 
             if isHoveringClearDivider {
+              // Tidy button (visible if 4+ uncategorized tabs)
+              if viewModel.shouldShowTidy {
+                Button(action: {
+                  isTidying = true
+                  Task {
+                    await viewModel.tidyTabs()
+                    isTidying = false
+                  }
+                }) {
+                  if isTidying {
+                    ProgressView()
+                      .scaleEffect(0.6)
+                      .frame(width: 30, height: 14)
+                  } else {
+                    Text("Tidy")
+                      .font(.system(size: 11))
+                      .foregroundColor(secondaryTextColor)
+                  }
+                }
+                .buttonStyle(.plain)
+                .disabled(isTidying)
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+              }
+
               Button(action: {
                 // Close all ungrouped tabs - creates new tab if active was among them
                 viewModel.clearUngroupedTabs(in: spaceId)
@@ -204,8 +231,15 @@ struct SidebarView: View {
           }
         }
 
-        // Ungrouped tabs
-        ForEach(ungroupedTabs) { tab in
+        // Categorized tabs (grouped by category with headers)
+        let categorizedGroups = viewModel.groupedTabsByCategory(for: spaceId)
+        ForEach(categorizedGroups, id: \.category) { group in
+          categorySection(category: group.category, tabs: group.tabs)
+        }
+
+        // Uncategorized tabs
+        let uncategorizedTabs = viewModel.uncategorizedTabsForSpace(spaceId)
+        ForEach(uncategorizedTabs) { tab in
           tabRow(tab)
             .draggable(tab.id.uuidString)
         }
@@ -217,6 +251,25 @@ struct SidebarView: View {
     .contextMenu {
       Button("New Folder") {
         _ = viewModel.createFolder(in: spaceId)
+      }
+    }
+  }
+
+  // MARK: - Category Section
+  @ViewBuilder
+  private func categorySection(category: String, tabs: [BrowserTab]) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      // Category header
+      Text(category)
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundColor(secondaryTextColor)
+        .padding(.horizontal, 8)
+        .padding(.top, 8)
+
+      // Tabs in this category
+      ForEach(tabs) { tab in
+        tabRow(tab)
+          .draggable(tab.id.uuidString)
       }
     }
   }
