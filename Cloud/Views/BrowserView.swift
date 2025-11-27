@@ -85,7 +85,7 @@ struct BrowserView: View {
         Color.black.opacity(0.3)
           .ignoresSafeArea()
           .onTapGesture {
-            viewModel.isSpotlightVisible = false
+            viewModel.hideSpotlight()
           }
 
         SpotlightViewAppKit(viewModel: viewModel)

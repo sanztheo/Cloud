@@ -17,9 +17,11 @@ struct SpotlightViewAppKit: NSViewControllerRepresentable {
   }
 
   func updateNSViewController(_ nsViewController: SpotlightViewController, context: Context) {
-    // Only sync search field if user is NOT actively typing (prevents character loss)
+    // Force sync when searchQuery is empty (reset case) OR when user is not typing
     let isUserTyping = nsViewController.searchField.currentEditor() != nil
-    if !isUserTyping && nsViewController.searchField.stringValue != viewModel.searchQuery {
+    let shouldForceSync = viewModel.searchQuery.isEmpty && !nsViewController.searchField.stringValue.isEmpty
+
+    if shouldForceSync || (!isUserTyping && nsViewController.searchField.stringValue != viewModel.searchQuery) {
       nsViewController.searchField.stringValue = viewModel.searchQuery
     }
 
