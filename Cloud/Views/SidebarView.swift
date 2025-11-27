@@ -63,6 +63,9 @@ struct SidebarView: View {
   // Tidy feature state
   @State private var isTidying: Bool = false
 
+  // Mini address bar popup
+  @State private var showMiniAddressBar: Bool = false
+
   // Download notification animation
   @State private var showDownloadBubble: Bool = false
   @State private var bubbleOffset: CGSize = CGSize(width: 100, height: -200)
@@ -645,7 +648,7 @@ struct SidebarView: View {
 
   // MARK: - Address Bar (Arc Style)
   private var addressBar: some View {
-    Button(action: { viewModel.openLocation() }) {
+    Button(action: { showMiniAddressBar = true }) {
       HStack(spacing: 8) {
         // Security indicator or search icon
         if let url = viewModel.activeTab?.url {
@@ -677,6 +680,9 @@ struct SidebarView: View {
       )
     }
     .buttonStyle(.plain)
+    .popover(isPresented: $showMiniAddressBar, arrowEdge: .top) {
+      MiniAddressBar(viewModel: viewModel, isPresented: $showMiniAddressBar)
+    }
   }
 
   // MARK: - Download Badge Count
