@@ -128,15 +128,17 @@ extension BrowserViewModel {
       }
     }
 
-    // Add "Search History with AI" command
-    let aiSearchMatches =
-      query.isEmpty
-        || query.localizedCaseInsensitiveContains("search")
-        || query.localizedCaseInsensitiveContains("history")
-        || query.localizedCaseInsensitiveContains("ai")
-        || query.localizedCaseInsensitiveContains("find")
-        || query.localizedCaseInsensitiveContains("cherche")
-        || query.localizedCaseInsensitiveContains("historique")
+    // Add "Search History with AI" command - only when query is empty or explicitly matches keywords
+    // Use word boundary matching to avoid false positives (e.g., "gmail" contains "ai")
+    let lowercasedQuery = query.lowercased()
+    let queryWords = Set(lowercasedQuery.split(separator: " ").map { String($0) })
+    let aiKeywords: Set<String> = ["search", "history", "ai", "find", "cherche", "historique"]
+    let hasAIKeyword = !queryWords.isDisjoint(with: aiKeywords)
+      || lowercasedQuery == "ai"
+      || lowercasedQuery.hasPrefix("ai ")
+      || lowercasedQuery.hasSuffix(" ai")
+
+    let aiSearchMatches = query.isEmpty || hasAIKeyword
 
     if aiSearchMatches && EmbeddingService.shared.isAvailable {
       results.append(
@@ -168,8 +170,6 @@ extension BrowserViewModel {
       return results
     }
 
-    let lowercasedQuery = query.lowercased()
-
     // Check if query looks like a URL (contains "://" OR contains dot and no spaces)
     let looksLikeURL = query.contains("://") || (query.contains(".") && !query.contains(" "))
 
@@ -188,10 +188,18 @@ extension BrowserViewModel {
     }
 
     // 2. Collect high-quality history matches with fuzzy matching and frecency scoring
+    // Use a Set to track seen URLs and avoid duplicates
+    var seenHistoryKeys = Set<String>()
     var historyMatches: [(score: Int, result: SearchResult)] = []
+
     for entry in history.prefix(100) {
       let matchScore = smartMatchScore(query: lowercasedQuery, entry: entry)
       if matchScore > 0 {
+        // Deduplicate by host + title (same page = same result)
+        let dedupeKey = "\(entry.url.host ?? "")||\(entry.title)"
+        guard !seenHistoryKeys.contains(dedupeKey) else { continue }
+        seenHistoryKeys.insert(dedupeKey)
+
         let frecencyScore = calculateFrecencyScore(for: entry)
         let totalScore = matchScore + frecencyScore
 

@@ -13,9 +13,12 @@ struct WaveShape: Shape {
   var amplitude: CGFloat
   var frequency: CGFloat
 
-  var animatableData: CGFloat {
-    get { phase }
-    set { phase = newValue }
+  var animatableData: AnimatablePair<CGFloat, CGFloat> {
+    get { AnimatablePair(phase, amplitude) }
+    set {
+      phase = newValue.first
+      amplitude = newValue.second
+    }
   }
 
   func path(in rect: CGRect) -> Path {
@@ -44,26 +47,27 @@ struct WaveDivider: View {
 
   @State private var phase: CGFloat = 0
   @State private var amplitude: CGFloat = 0
+  @State private var waveOpacity: CGFloat = 0
 
   private let maxAmplitude: CGFloat = 3
   private let frequency: CGFloat = 3
 
   var body: some View {
     ZStack {
-      // Static line (always visible)
+      // Static line - fades out when animating
       Rectangle()
         .fill(color)
         .frame(height: 1)
-        .opacity(isAnimating ? 0 : 1)
+        .opacity(1 - waveOpacity)
 
-      // Animated wave
-      if isAnimating {
-        WaveShape(phase: phase, amplitude: amplitude, frequency: frequency)
-          .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-          .frame(height: maxAmplitude * 2 + 2)
-      }
+      // Animated wave - always present, controlled by opacity
+      WaveShape(phase: phase, amplitude: amplitude, frequency: frequency)
+        .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+        .frame(height: maxAmplitude * 2 + 2)
+        .opacity(waveOpacity)
     }
-    .frame(height: isAnimating ? maxAmplitude * 2 + 2 : 1)
+    .frame(height: maxAmplitude * 2 + 2)
+    .clipped()
     .onChange(of: isAnimating) { _, newValue in
       if newValue {
         startAnimation()
@@ -74,26 +78,32 @@ struct WaveDivider: View {
   }
 
   private func startAnimation() {
-    // Fade in amplitude
-    withAnimation(.easeOut(duration: 0.2)) {
+    // Smooth fade in wave and fade out line
+    withAnimation(.easeOut(duration: 0.3)) {
+      waveOpacity = 1
       amplitude = maxAmplitude
     }
 
-    // Continuous wave movement
-    withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
-      phase = .pi * 2
+    // Start continuous wave movement after a tiny delay
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+      withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+        phase = .pi * 2
+      }
     }
   }
 
   private func stopAnimation() {
-    // Fade out amplitude
+    // Stop the repeating animation by setting to current value
     withAnimation(.easeIn(duration: 0.3)) {
       amplitude = 0
+      waveOpacity = 0
     }
 
-    // Reset phase after fade out
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-      phase = 0
+    // Reset phase after fade out completes
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+      withAnimation(nil) {
+        phase = 0
+      }
     }
   }
 }
