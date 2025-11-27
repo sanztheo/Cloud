@@ -418,14 +418,14 @@ extension BrowserViewModel {
         print("  → Switching to existing tab")
         selectTab(tabId)
       }
-      isSpotlightVisible = false
+      hideSpotlight()
     case .bookmark, .history, .suggestion, .website:
       // Create NEW tab for bookmarks, history, suggestions, and websites (Arc-style behavior)
       if let url = result.url {
         print("  → Creating new tab for URL: \(url)")
         createNewTab(url: url)
       }
-      isSpotlightVisible = false
+      hideSpotlight()
     case .command:
       if result.title == "Ask About WebPage" {
         activateAskMode()
