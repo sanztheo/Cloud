@@ -11,6 +11,7 @@ struct BrowserView: View {
   @StateObject private var viewModel = BrowserViewModel()
   @State private var showSettings = false
   @State private var floatingRotation: Double = 0
+  @State private var keyMonitor: Any?
   @Namespace private var namespace
 
   // MARK: - Interpolated Background Color
@@ -101,6 +102,9 @@ struct BrowserView: View {
     .ignoresSafeArea(.all, edges: .top)
     .onAppear {
       setupKeyboardShortcuts()
+    }
+    .onDisappear {
+      cleanupKeyboardShortcuts()
     }
     .onReceive(NotificationCenter.default.publisher(for: .toggleSidebar)) { _ in
       viewModel.toggleSidebar()
@@ -230,7 +234,13 @@ struct BrowserView: View {
 
   // MARK: - Keyboard Shortcuts
   private func setupKeyboardShortcuts() {
-    NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+    // Remove existing monitor if any
+    if let monitor = keyMonitor {
+      NSEvent.removeMonitor(monitor)
+    }
+
+    // Add new monitor and store reference
+    keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
       // Cmd+T for Spotlight
       if event.modifierFlags.contains(.command) {
         switch event.charactersIgnoringModifiers {
@@ -275,6 +285,13 @@ struct BrowserView: View {
       }
 
       return event
+    }
+  }
+
+  private func cleanupKeyboardShortcuts() {
+    if let monitor = keyMonitor {
+      NSEvent.removeMonitor(monitor)
+      keyMonitor = nil
     }
   }
 }
